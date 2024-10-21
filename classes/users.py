@@ -1,9 +1,11 @@
 import sys
 sys.path.append("..")
 from flask import Blueprint, request, jsonify
+from flask_login import current_user
 from werkzeug.security import generate_password_hash
 from db import get_db_connection
 from flask_login import login_required, UserMixin
+from flask_jwt_extended import create_access_token
 
 # Create a Blueprint for users
 users_bp = Blueprint('users', __name__)
@@ -23,7 +25,14 @@ def get_all_users():
         conn = get_db_connection()
         users = conn.execute('SELECT * FROM users').fetchall()
         conn.close()
-        return jsonify([dict(user) for user in users])
+        
+        # Create a token for the current user
+        access_token = create_access_token(identity=current_user.get_id())
+        
+        return jsonify({
+            'users': [dict(user) for user in users],
+            'token': access_token
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -39,7 +48,14 @@ def get_pjt_setting_ByUserId(user_id):
             return jsonify({'error': 'No projector settings found for this user'}), 404
         
         conn.close()
-        return jsonify(settings)
+        
+        # Create a token for the current user
+        access_token = create_access_token(identity=current_user.get_id())
+        
+        return jsonify({
+            'settings': settings,
+            'token': access_token
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -59,7 +75,10 @@ def create_user():
         conn.commit()
         conn.close()
 
-        return jsonify(new_user), 201
+        # Create a token for the new user
+        access_token = create_access_token(identity=username)
+
+        return jsonify({'message': 'A new user has been succesfully created', 'token': access_token}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 400
         
@@ -84,7 +103,13 @@ def update_PJT_ByUserId(user_id):
 
         conn.close()
 
-        return jsonify({'projector_app_setting': settings}), 200
+        # Create a token for the current user
+        access_token = create_access_token(identity=current_user.get_id())
+
+        return jsonify({
+            'projector_app_setting': settings,
+            'token': access_token
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -102,7 +127,13 @@ def delete_user_ByUserId(user_id):
         conn.commit()
         conn.close()
 
-        return jsonify({'message': f'Successfully deleted user with ID = {user_id}'}), 200
+        # Create a token for the current user
+        access_token = create_access_token(identity=current_user.get_id())
+
+        return jsonify({
+            'message': f'Successfully deleted user with ID = {user_id}',
+            'token': access_token
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 

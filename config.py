@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from classes.users import users_bp, User
 from classes.videos import videos_bp, Video
 from db import get_db_connection
+from flask_jwt_extended import JWTManager, create_access_token
 
 app = Flask(__name__)
 
@@ -13,10 +14,12 @@ app.register_blueprint(videos_bp)
 
 # For user session management
 app.secret_key = 'your_secret_key'  # Change this to a random secret key
+app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Change this to a secure key
 
-# Setup login manager
+# Setup login manager and JWTManager
 login_manager = LoginManager()
 login_manager.init_app(app)
+jwt = JWTManager(app)
 
 # Create tables
 def init_db():
@@ -61,7 +64,11 @@ def login():
     if user and check_password_hash(user['password'], password):
         user_obj = User(id=user['id'], username=user['username'], password=user['password'])
         login_user(user_obj)
-        return jsonify({'message': 'Logged in successfully'}), 200
+
+        # Create a token for the authenticated user
+        access_token = create_access_token(identity=user['id'])
+
+        return jsonify({'message': 'Logged in successfully', 'token': access_token}), 200
     return jsonify({'error': 'Invalid credentials'}), 401
 
 @app.route('/status', methods=['GET'])
@@ -80,4 +87,4 @@ def logout():
 # Run the server
 if __name__ == '__main__':
     init_db()
-    app.run(host='127.0.0.1', debug=True) # specify the server host/port and activate debug mode here
+    app.run(host='127.0.0.1', port ='5000', debug=True) # specify the server host/port and activate debug mode here
