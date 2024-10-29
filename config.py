@@ -5,6 +5,7 @@ from classes.users import users_bp, User
 from classes.videos import videos_bp, Video
 from db import get_db_connection
 from flask_jwt_extended import JWTManager, create_access_token
+from flask_cors import CORS
 
 app = Flask(__name__)
 
@@ -20,6 +21,7 @@ app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Change this to a secure 
 login_manager = LoginManager()
 login_manager.init_app(app)
 jwt = JWTManager(app)
+CORS(app)
 
 # Create tables
 def init_db():
@@ -87,4 +89,4 @@ def logout():
 # Run the server
 if __name__ == '__main__':
     init_db()
-    app.run(host='127.0.0.1', port ='5000', debug=True) # specify the server host/port and activate debug mode here
+    app.run(host='0.0.0.0', port ='5000', debug=True) # specify the server host/port and activate debug mode here
