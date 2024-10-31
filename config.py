@@ -6,6 +6,7 @@ from classes.videos import videos_bp, Video
 from db import get_db_connection
 from flask_jwt_extended import JWTManager, create_access_token
 from flask_cors import CORS
+import uuid
 
 app = Flask(__name__)
 
@@ -52,6 +53,12 @@ def load_user(user_id):
         return User(id=user['id'], username=user['username'], password=user['password'])
     return None
 
+@app.route('/uuid', methods=['GET'])
+def device_uuid():
+    random_uuid = uuid.uuid4()
+    return jsonify(random_uuid)
+
+# uuid --> connect with web socket url
 # log in-out logics
 @app.route('/login', methods=['POST'])
 def login():
@@ -70,7 +77,7 @@ def login():
         # Create a token for the authenticated user
         access_token = create_access_token(identity=user['id'])
 
-        return jsonify({'message': 'Logged in successfully', 'token': access_token}), 200
+        return jsonify({'message': 'Logged in successfully', 'user_id': user['id'], 'token': access_token}), 200
     return jsonify({'error': 'Invalid credentials'}), 401
 
 @app.route('/status', methods=['GET'])
