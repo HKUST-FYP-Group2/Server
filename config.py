@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
 from classes.users import users_bp, User
 from classes.videos import videos_bp, Video
 from db import get_db_connection
@@ -65,12 +64,16 @@ def login():
     data = request.get_json()
     username = data['username']
     password = data['password']
+    projector_app_setting = data.get('projector_app_setting')
 
+    if not projector_app_setting:
+        video_link = 'retrieved from server action?'
+        
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     conn.close()
 
-    if user and check_password_hash(user['password'], password):
+    if user and user['password'] == password:
         user_obj = User(id=user['id'], username=user['username'], password=user['password'])
         login_user(user_obj)
 
@@ -83,7 +86,10 @@ def login():
 @app.route('/status', methods=['GET'])
 def status():
     if current_user.is_authenticated:
-        return jsonify({'logged_in': True, 'username': current_user.username, 'user_id': current_user.get_id()}), 200
+        return jsonify({'logged_in': True, 
+                        'username': current_user.username, 
+                        'password': current_user.passoword, 
+                        'user_id': current_user.get_id()}), 200
     else:
         return jsonify({'logged_in': False}), 200
     

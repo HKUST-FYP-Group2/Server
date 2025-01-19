@@ -2,7 +2,6 @@ import sys
 sys.path.append("..")
 from flask import Blueprint, request, jsonify
 from flask_login import current_user
-from werkzeug.security import generate_password_hash
 from db import get_db_connection
 from flask_login import login_required, UserMixin
 from flask_jwt_extended import create_access_token
@@ -67,11 +66,9 @@ def create_user():
         password = new_user['password']
         settings = new_user.get('projector_app_setting')
 
-        hashed_password = generate_password_hash(password)
-
         conn = get_db_connection()
         conn.execute('INSERT INTO users (username, password, projector_app_setting) VALUES (?, ?, ?)', 
-                     (username, hashed_password, settings))
+                     (username, password, settings))
         conn.commit()
         conn.close()
 
