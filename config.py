@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
+from flask_restful import Api, Resource
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from classes.users import users_bp, User
 from classes.videos import videos_bp, Video
@@ -52,54 +53,60 @@ def load_user(user_id):
         return User(id=user['id'], username=user['username'], password=user['password'])
     return None
 
-@app.route('/uuid', methods=['GET'])
-def device_uuid():
-    random_uuid = uuid.uuid4()
-    return jsonify(random_uuid)
+class DeviceUUID(Resource):
+    def get(self):
+        random_uuid = uuid.uuid4()
+        return (random_uuid)
 
-# uuid --> connect with web socket url
-# log in-out logics
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data['username']
-    password = data['password']
-    projector_app_setting = data.get('projector_app_setting')
+class Login(Resource):
+    def post(self):
+        data = request.get_json()
+        username = data['username']
+        password = data['password']
+        projector_app_setting = data.get('projector_app_setting')
 
-    if not projector_app_setting:
-        video_link = 'retrieved from server action?'
-        
-    conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-    conn.close()
+        if not projector_app_setting:
+            video_link = 'retrieved from server action?'
 
-    if user and user['password'] == password:
-        user_obj = User(id=user['id'], username=user['username'], password=user['password'])
-        login_user(user_obj)
+        conn = get_db_connection()
+        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+        conn.close()
 
-        # Create a token for the authenticated user
-        access_token = create_access_token(identity=user['id'])
+        if user and user['password'] == password:
+            user_obj = User(id=user['id'], username=user['username'], password=user['password'])
+            login_user(user_obj)
 
-        return jsonify({'message': 'Logged in successfully', 'user_id': user['id'], 'token': access_token}), 200
-    return jsonify({'error': 'Invalid credentials'}), 401
+            # Create a token for the authenticated user
+            access_token = create_access_token(identity=user['id'])
 
-@app.route('/status', methods=['GET'])
-def status():
-    if current_user.is_authenticated:
-        return jsonify({'logged_in': True, 
-                        'username': current_user.username, 
-                        'password': current_user.passoword, 
-                        'user_id': current_user.get_id()}), 200
-    else:
-        return jsonify({'logged_in': False}), 200
+            return ({'message': 'Logged in successfully', 'user_id': user['id'], 'token': access_token}), 200
+        return ({'error': 'Invalid credentials'}), 401
+
+class Status(Resource):
+    @login_required
+    def get(self):
+        if current_user.is_authenticated:
+            return ({'logged_in': True, 
+                            'username': current_user.username, 
+                            'password': current_user.password, 
+                            'user_id': current_user.get_id()}), 200
+        else:
+            return ({'logged_in': False}), 200
     
-@app.route('/logout', methods=['POST'])
-@login_required
-def logout():
-    logout_user()
-    return jsonify({'message': 'Logged out successfully'}), 200
+class Logout(Resource):
+    @login_required
+    def post(self):
+        logout_user()
+        return ({'message': 'Logged out successfully'}), 200
+
+# Setup API
+api = Api(app)
+api.add_resource(DeviceUUID, '/uuid')
+api.add_resource(Login, '/login')
+api.add_resource(Status, '/status')
+api.add_resource(Logout, '/logout')
 
 # Run the server
 if __name__ == '__main__':
     init_db()
-    app.run(host='0.0.0.0', port ='5000', debug=True) # specify the server host/port and activate debug mode here
+    app.run(host='127.0.0.1', port ='5000', debug=True) # specify the server host/port and activate debug mode here

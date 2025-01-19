@@ -1,13 +1,12 @@
-import sys
-sys.path.append("..")
-from flask import Blueprint, request, jsonify
-from flask_login import current_user
-from db import get_db_connection
-from flask_login import login_required, UserMixin
+from flask import Blueprint, request
+from flask_login import current_user, login_required, UserMixin
 from flask_jwt_extended import create_access_token
+from flask_restful import Api, Resource
+from db import get_db_connection
 
 # Create a Blueprint for users
 users_bp = Blueprint('users', __name__)
+api = Api(users_bp)
 
 # User model for flask_login
 class User(UserMixin):
@@ -16,124 +15,138 @@ class User(UserMixin):
         self.username = username
         self.password = password
 
-# USER-related function
-@users_bp.route('/users', methods=['GET'])
-@login_required
-def get_all_users():
-    try:
-        conn = get_db_connection()
-        users = conn.execute('SELECT * FROM users').fetchall()
-        conn.close()
-        
-        # Create a token for the current user
-        access_token = create_access_token(identity=current_user.get_id())
-        
-        return jsonify({
-            'users': [dict(user) for user in users],
-            'token': access_token
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+# User resource for RESTful API
+class UserResource(Resource):
+    @login_required
+    def get(self, user_id):
+        """Get a user by ID."""
+        try:
+            conn = get_db_connection()
+            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+            conn.close()
 
-@users_bp.route('/users/<int:user_id>/pjt', methods=['GET'])
-@login_required
-def get_pjt_setting_ByUserId(user_id):
-    try:
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-        settings = user['projector_app_setting']
-        
-        if not settings:
-            return jsonify({'error': 'No projector settings found for this user'}), 404
-        
-        conn.close()
-        
-        # Create a token for the current user
-        access_token = create_access_token(identity=current_user.get_id())
-        
-        return jsonify({
-            'settings': settings,
-            'token': access_token
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+            if user is None:
+                return ({'error': 'User not found'}), 404
+            
+            access_token = create_access_token(identity=current_user.get_id())
+            return ({
+                'user': dict(user),
+                'token': access_token
+            }), 200
+        except Exception as e:
+            return ({'error': str(e)}), 400
 
-@users_bp.route('/users', methods=['POST'])
-def create_user():
-    try:
-        new_user = request.get_json()
-        username = new_user['username']
-        password = new_user['password']
-        settings = new_user.get('projector_app_setting')
+    @login_required
+    def delete(self, user_id):
+        """Delete a user by ID."""
+        try:
+            conn = get_db_connection()
+            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
 
-        conn = get_db_connection()
-        conn.execute('INSERT INTO users (username, password, projector_app_setting) VALUES (?, ?, ?)', 
-                     (username, password, settings))
-        conn.commit()
-        conn.close()
+            if user is None:
+                return ({'error': 'User not found'}), 404
 
-        # Create a token for the new user
-        access_token = create_access_token(identity=username)
-
-        return jsonify({'message': 'A new user has been succesfully created', 'token': access_token}), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-        
-@users_bp.route('/users/<int:user_id>/pjt', methods=['PUT'])
-@login_required
-def update_PJT_ByUserId(user_id):
-    try:
-        updated_data = request.get_json()
-        settings = updated_data.get('projector_app_setting')
-
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-
-        if user is None:
-            return jsonify({'error': 'User not found'}), 404
-
-        # Update only the projector_app_setting if it is provided.
-        if settings:
-            conn.execute('UPDATE users SET projector_app_setting = ? WHERE id = ?', 
-                         (settings, user_id))
+            conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
             conn.commit()
+            conn.close()
 
-        conn.close()
+            access_token = create_access_token(identity=current_user.get_id())
+            return ({
+                'message': f'Successfully deleted user with ID = {user_id}',
+                'token': access_token
+            }), 200
+        except Exception as e:
+            return ({'error': str(e)}), 400
 
-        # Create a token for the current user
-        access_token = create_access_token(identity=current_user.get_id())
+class UserListResource(Resource):
+    @login_required
+    def get(self):
+        """Get all users."""
+        try:
+            conn = get_db_connection()
+            users = conn.execute('SELECT * FROM users').fetchall()
+            conn.close()
+            
+            access_token = create_access_token(identity=current_user.get_id())
+            return ({
+                'users': [dict(user) for user in users],
+                'token': access_token
+            }), 200
+        except Exception as e:
+            return ({'error': str(e)}), 400
 
-        return jsonify({
-            'projector_app_setting': settings,
-            'token': access_token
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    @login_required
+    def post(self):
+        """Create a new user."""
+        try:
+            new_user = request.get_json()
+            username = new_user['username']
+            password = new_user['password']
+            settings = new_user.get('projector_app_setting')
 
-@users_bp.route('/users/<int:user_id>', methods=['DELETE'])
-@login_required
-def delete_user_ByUserId(user_id):
-    try:
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+            conn = get_db_connection()
+            conn.execute('INSERT INTO users (username, password, projector_app_setting) VALUES (?, ?, ?)', 
+                         (username, password, settings))
+            conn.commit()
+            conn.close()
 
-        if user is None:
-            return jsonify({'error': 'User not found'}), 404
+            access_token = create_access_token(identity=username)
+            return ({'message': 'A new user has been successfully created', 'token': access_token}), 201
+        except Exception as e:
+            return ({'error': str(e)}), 400
 
-        conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
-        conn.commit()
-        conn.close()
+# Projector settings resource
+class ProjectorSettingsResource(Resource):
+    @login_required
+    def get(self, user_id):
+        """Get projector settings for a user by ID."""
+        try:
+            conn = get_db_connection()
+            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+            settings = user['projector_app_setting']
+            
+            if not settings:
+                return ({'error': 'No projector settings found for this user'}), 404
+            
+            conn.close()
+            access_token = create_access_token(identity=current_user.get_id())
+            return ({
+                'settings': settings,
+                'token': access_token
+            }), 200
+        except Exception as e:
+            return ({'error': str(e)}), 400
 
-        # Create a token for the current user
-        access_token = create_access_token(identity=current_user.get_id())
+    @login_required
+    def put(self, user_id):
+        """Update projector settings for a user by ID."""
+        try:
+            updated_data = request.get_json()
+            settings = updated_data.get('projector_app_setting')
 
-        return jsonify({
-            'message': f'Successfully deleted user with ID = {user_id}',
-            'token': access_token
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+            conn = get_db_connection()
+            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
 
-# git remote add origin https://github.com/HKUST-FYP-Group2/Server.git
-# git branch -M main
-# git push -u origin main
+            if user is None:
+                return ({'error': 'User not found'}), 404
+
+            # Update only if settings are provided
+            if settings:
+                conn.execute('UPDATE users SET projector_app_setting = ? WHERE id = ?', 
+                             (settings, user_id))
+                conn.commit()
+
+            conn.close()
+
+            access_token = create_access_token(identity=current_user.get_id())
+            return ({
+                'projector_app_setting': settings,
+                'token': access_token
+            }), 200
+        except Exception as e:
+            return ({'error': str(e)}), 400
+
+# Register the resources with the API
+api.add_resource(UserListResource, '/users')
+api.add_resource(UserResource, '/users/<int:user_id>')
+api.add_resource(ProjectorSettingsResource, '/users/<int:user_id>/pjt')
