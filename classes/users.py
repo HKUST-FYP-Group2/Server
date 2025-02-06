@@ -75,7 +75,6 @@ class UserListResource(Resource):
         except Exception as e:
             return ({'error': str(e)}), 400
 
-    @login_required
     def post(self):
         """Create a new user."""
         try:
