@@ -1,6 +1,8 @@
 from flask import Flask, request
 from flask_restful import Api, Resource
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from werkzeug.security import check_password_hash
+
 from classes.users import users_bp, User
 from classes.videos import videos_bp, Video
 from db import get_db_connection
@@ -56,7 +58,7 @@ def load_user(user_id):
 class DeviceUUID(Resource):
     def get(self):
         random_uuid = uuid.uuid4()
-        return (random_uuid)
+        return {'uuid': str(random_uuid)}
 
 class Login(Resource):
     def post(self):
@@ -72,7 +74,7 @@ class Login(Resource):
         user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
         conn.close()
 
-        if user and user['password'] == password:
+        if user and check_password_hash(user['password'], password):
             user_obj = User(id=user['id'], username=user['username'], password=user['password'])
             login_user(user_obj)
 
