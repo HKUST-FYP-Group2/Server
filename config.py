@@ -85,7 +85,6 @@ class Login(Resource):
         return ({'error': 'Invalid credentials'}), 401
 
 class Status(Resource):
-    @login_required
     def get(self):
         if current_user.is_authenticated:
             return ({'logged_in': True, 
@@ -93,7 +92,7 @@ class Status(Resource):
                             'password': current_user.password, 
                             'user_id': current_user.get_id()}), 200
         else:
-            return ({'logged_in': False}), 200
+            return ({'logged_in': False}), 401
     
 class Logout(Resource):
     @login_required
