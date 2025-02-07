@@ -74,7 +74,7 @@ class Login(Resource):
         user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
         conn.close()
 
-        if user and check_password_hash(user['password'], password):
+        if user and (user['password'] == password):
             user_obj = User(id=user['id'], username=user['username'], password=user['password'])
             login_user(user_obj)
 
