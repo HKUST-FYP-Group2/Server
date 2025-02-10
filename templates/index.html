@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Client</title>
+</head>
+<body>
+    <h1>WebSocket Client</h1>
+    <input type="text" id="message" placeholder="Enter your message">
+    <button onclick="sendMessage()">Send</button>
+    <div id="log"></div>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('connect', () => {
+            log('Connected to WebSocket server');
+        });
+
+        socket.on('message', (msg) => {
+            log(`Received: ${msg}`);
+        });
+
+        socket.on('disconnect', () => {
+            log('Disconnected from WebSocket server');
+        });
+
+        function sendMessage() {
+            const messageInput = document.getElementById('message');
+            const message = messageInput.value;
+            socket.send(message);
+            log(`Sent: ${message}`);
+            messageInput.value = '';
+        }
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = message;
+            logDiv.appendChild(logEntry);
+        }
+    </script>
+</body>
+</html>
