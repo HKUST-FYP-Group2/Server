@@ -118,7 +118,18 @@ def handle_message(msg):
     print('Received message: ' + msg)
     send(msg, broadcast=True)
 
+@socketio.on('login')
+def handle_login(data):
+    user_id = data['user_id']
+    room = f'room_{user_id}'
+    join_room(room)
+    print(f'User {user_id} joined {room}')
+    print(f'{room} has been created')
+    # Server Emits login Event Back to Client
+    emit('login', {'user_id': user_id}, room=room)
+    
+
 # Run the server
 if __name__ == '__main__':
     init_db()
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)  # Specify the server host/port and activate debug mode here
+    socketio.run(app, host='0.0.0.0', port=8080, debug=True)
