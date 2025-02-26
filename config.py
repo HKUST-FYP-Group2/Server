@@ -158,24 +158,6 @@ class QRLogin(Resource):
         emit('QRLogin', {'uuid': device_uuid, 'login_success': 'false'}, room=room)
 
 api.add_resource(QRLogin, '/QRLogin')
-
-
-class TokenLogin(Resource):
-    @jwt_required()
-    def post(self):
-        user_id = get_jwt_identity()
-
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-        conn.close()
-
-        if user:
-            user_obj = User(id=user['id'], username=user['username'], password=user['password'])
-            login_user(user_obj)
-            return {'message': 'Logged in successfully', 'user_id': user['id']}, 200
-        return {'error': 'Invalid token'}, 401
-
-api.add_resource(TokenLogin, '/token_login')
 #---------until here------------
 
 @app.route('/')
