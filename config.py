@@ -61,7 +61,6 @@ def load_user(user_id):
 class DeviceUUID(Resource):
     def get(self):
         random_uuid = uuid.uuid4()
-
         return {'uuid': str(random_uuid)}
 
 class Login(Resource):
@@ -152,6 +151,15 @@ class QRLogin(Resource):
         room = f'device_{device_uuid}'
         join_room(room)
         emit('QRLogin', {'uuid': device_uuid, 'login_success': 'false'}, room=room)
+
+    @socketio.on('SyncSetting')
+    @jwt_required()
+    def SyncSetting_socketIO(data):
+        print(data)
+        user_id = get_jwt_identity()
+        room = f'room_{user_id}'
+        join_room(room)
+        emit('SyncSetting', data, room=room)
 
 api.add_resource(QRLogin, '/QRLogin')
 #---------until here------------
