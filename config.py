@@ -20,6 +20,7 @@ app.register_blueprint(videos_bp)
 # For user session management
 app.secret_key = 'your_secret_key'  # Change this to a random secret key
 app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Change this to a secure key
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 
 # Setup login manager and JWTManager
 login_manager = LoginManager()
@@ -131,20 +132,15 @@ class QRLogin(Resource):
         if not data or 'device_uuid' not in data:
             return {'error': 'Invalid request'}, 400
 
-        username = current_user.username
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-        conn.close()
-
+        user_id = get_jwt_identity()
         device_uuid = data['device_uuid']
         room = f'device_{device_uuid}'
 
         if room not in socketio.server.manager.rooms.get('/', {}):
             return {'error': 'Invalid device'}, 400
-        access_token = create_access_token(identity=user['id'])
+        access_token = create_access_token(identity=user_id)
 
-        emit('QRLogin', {'login_success': 'true', 'username': user['username'], 'token': access_token}, room=room, namespace='/')
-        disconnect()
+        emit('QRLogin', {'login_success': 'true', 'user_id': user_id, 'token': access_token}, room=room, namespace='/')
         return 200
 
     @socketio.on('QRLogin')
@@ -172,13 +168,13 @@ def handle_message(msg):
 @socketio.on('login')
 def handle_login(data):
     user_id = data['user_id']
+    print(data)
     room = f'room_{user_id}'
     join_room(room)
     print(f'User {user_id} joined {room}')
     print(f'{room} has been created')
     # Server Emits login Event Back to Client
     emit('login', {'user_id': user_id}, room=room)
-
 
 # Run the server
 if __name__ == '__main__':
