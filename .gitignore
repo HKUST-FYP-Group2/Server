@@ -4,5 +4,6 @@ __pycache__/
 
 # Ignore virtual environments
 venv/
+.venv/
 env/
 *.egg-info/
