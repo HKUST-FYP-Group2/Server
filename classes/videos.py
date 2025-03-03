@@ -3,14 +3,26 @@ sys.path.append("..")
 from flask import Blueprint, request, jsonify
 from db import get_db_connection
 from flask_login import login_required
+from enum import Enum
 
 # Create a Blueprint for users
 videos_bp = Blueprint('videos', __name__)
 
+class VIDEO_STATE(Enum):
+    STORED_UNCLASSIFIED = 1
+    STORED_CLASSIFIED = 2
+    
+    LIVE_UNCLASSIFIED = 3
+    LIVE_CLASSIFIED = 4
+
+    DELETED = 5
 class Video:
-    def __init__(self, id, video_name):
+    def __init__(self, id, video_name: str, video_state = VIDEO_STATE.STORED_UNCLASSIFIED):
         self.id = id
         self.video_name = video_name
+        self.classification:list[Enum] = None
+        self.state = video_state
+        self.images_location = None # should only be used when the 
 
 # VIDEO-related functions
 @videos_bp.route('/videos', methods=['GET'])

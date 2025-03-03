@@ -58,3 +58,8 @@ def alter_videos_table():
 # Call these functions to perform the alterations
 alter_users_table()
 alter_videos_table()
+
+"""
+I think the table can be further altered
+
+"""

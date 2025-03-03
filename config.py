@@ -1,4 +1,6 @@
 import uuid
+import base64
+import os
 
 from flask import Flask, request, render_template
 from flask_cors import CORS
@@ -9,9 +11,23 @@ from flask_socketio import SocketIO, join_room, emit, send, disconnect
 
 from classes.users import users_bp, User
 from classes.videos import videos_bp
-from db import get_db_connection
+from db import DatabaseManager
+
+
 
 app = Flask(__name__)
+
+dbManager = DatabaseManager('database.db')
+
+@app.before_request
+def before_request(): # whenever the app is on, the database connection is open
+    dbManager.start()
+    app.logger.info('Database connection opened.')
+
+@app.teardown_request
+def teardown_request(exception):
+    dbManager.stop()
+    app.logger.error(exception)
 
 # Blueprint registrations
 app.register_blueprint(users_bp)
@@ -29,31 +45,14 @@ jwt = JWTManager(app)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+IMAGE_DIRECTORY = "images"  # this is a temporary container, it holds all the images, which needs to be classified
+os.makedirs(IMAGE_DIRECTORY, exist_ok=True)
+
 # Create tables
-def init_db():
-    conn = get_db_connection()
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            projector_app_setting TEXT
-        )
-    ''')
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            video_name TEXT NOT NULL
-        )
-    ''')
-    conn.commit()
-    conn.close()
 
 @login_manager.user_loader
 def load_user(user_id):
-    conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-    conn.close()
+    user = dbManager.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     if user:
         return User(id=user['id'], username=user['username'], password=user['password'])
     return None
@@ -74,9 +73,7 @@ class Login(Resource):
         if not projector_app_setting:
             video_link = 'retrieved from server action?'
 
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-        conn.close()
+        user = dbManager.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
 
         if user and (user['password'] == password):
             user_obj = User(id=user['id'], username=user['username'], password=user['password'])
@@ -94,9 +91,7 @@ class Status(Resource):
     def get(self):
         user_id = get_jwt_identity()
 
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-        conn.close()
+        user = dbManager.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
 
         if user:
             return {
@@ -183,8 +178,30 @@ def handle_login(data):
     print(f'{room} has been created')
     # Server Emits login Event Back to Client
     emit('login', {'user_id': user_id}, room=room)
+    
+@socketio.on('send_image')
+def handle_image(data):
+    """
+    Handles receiving an image from the client.
+    Data should be a base64 encoded image string.
+    """
+    print("Received image from client.")
+
+    # Decode the base64 image
+    image_data = base64.b64decode(data['images'])
+
+    # Save the image with the given filename
+    filename = data.get('filename', 'received_image.jpg')
+    file_path = os.path.join(IMAGE_DIRECTORY, filename)
+
+    with open(file_path, "wb") as file:
+        file.write(image_data)
+
+    print(f"Image saved as {file_path}")
+
+    # Send confirmation
+    emit('image_saved', {'message': f'Image {filename} saved successfully'})
 
 # Run the server
 if __name__ == '__main__':
-    init_db()
     socketio.run(app, host='localhost', port=8080, debug=True, allow_unsafe_werkzeug=True)
