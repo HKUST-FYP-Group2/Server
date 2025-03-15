@@ -187,4 +187,6 @@ def handle_login(data):
 # Run the server
 if __name__ == '__main__':
     init_db()
-    socketio.run(app, host='localhost', port=8080, debug=True, allow_unsafe_werkzeug=True)
+    # Path to your SSL certificate and key files
+    ssl_context = ('./ssl_dynabot/cert.cert', './ssl_dynabot/key.key')
+    socketio.run(app, host='0.0.0.0', port=8000, debug=True, ssl_context=ssl_context)

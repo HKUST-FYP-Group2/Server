@@ -15,7 +15,7 @@
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-        const socket = io('http://143.89.130.216:8080');
+        const socket = io('https://143.89.130.216:8080');
 
         socket.on('connect', () => {
             log('Connected to WebSocket server');
@@ -44,7 +44,7 @@
             const password = document.getElementById('password').value;
             
             // Fetch Request to /login Endpoint
-            fetch('http://143.89.130.216:8080/login', {
+            fetch('https://143.89.130.216:8080/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -69,7 +69,7 @@
         }
 
         function logout() {
-            fetch('http://143.89.130.216:8080/logout', {
+            fetch('https://143.89.130.216:8080/logout', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
