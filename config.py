@@ -34,8 +34,8 @@ app.register_blueprint(users_bp)
 app.register_blueprint(videos_bp)
 
 # For user session management
-app.secret_key = 'your_secret_key'  # Change this to a random secret key
-app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Change this to a secure key
+app.secret_key = os.getenv("SECRET_KEY")  # Change this to a random secret key
+app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")  # Change this to a secure key
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 
 # Setup login manager and JWTManager
@@ -44,9 +44,6 @@ login_manager.init_app(app)
 jwt = JWTManager(app)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-
-IMAGE_DIRECTORY = "images"  # this is a temporary container, it holds all the images, which needs to be classified
-os.makedirs(IMAGE_DIRECTORY, exist_ok=True)
 
 # Create tables
 
@@ -178,29 +175,6 @@ def handle_login(data):
     print(f'{room} has been created')
     # Server Emits login Event Back to Client
     emit('login', {'user_id': user_id}, room=room)
-    
-@socketio.on('send_image')
-def handle_image(data):
-    """
-    Handles receiving an image from the client.
-    Data should be a base64 encoded image string.
-    """
-    print("Received image from client.")
-
-    # Decode the base64 image
-    image_data = base64.b64decode(data['images'])
-
-    # Save the image with the given filename
-    filename = data.get('filename', 'received_image.jpg')
-    file_path = os.path.join(IMAGE_DIRECTORY, filename)
-
-    with open(file_path, "wb") as file:
-        file.write(image_data)
-
-    print(f"Image saved as {file_path}")
-
-    # Send confirmation
-    emit('image_saved', {'message': f'Image {filename} saved successfully'})
 
 # Run the server
 if __name__ == '__main__':
