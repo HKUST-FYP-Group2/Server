@@ -1,13 +1,12 @@
-from flask import Flask, request, render_template
+from flask import Flask, request
 from flask_cors import CORS
-from flask_socketio import SocketIO, join_room, emit, send, disconnect
 import dotenv
 import os
 import base64
+import requests
 
 dotenv.load_dotenv()
 from db import DatabaseManager
-
 
 app = Flask(__name__)
 
@@ -29,31 +28,30 @@ def teardown_request(exception):
 app.secret_key = os.getenv("SECRET_KEY")  # Change this to a random secret key
 
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
 
-@socketio.on('send_image')
-def handle_image(data):
-    """
-    Handles receiving an image from the client.
-    Data should be a base64 encoded image string.
-    """
-    print("Received image from client.")
+AI_model_URL = os.getenv("AI_MODEL_URL")  # Load AI model URL from environment
 
-    # Decode the base64 image
-    image_data = base64.b64decode(data['image'])
+API_KEY = os.getenv("API_KEY")  # Load API key from environment
+sessions = {}  # Dictionary to store session tokens (Token -> Client IP)
 
-    # Save the image with the given filename
-    filename = data.get('filename', 'received_image.jpg')
-    file_path = os.path.join(IMAGE_DIRECTORY, filename)
-
-    with open(file_path, "wb") as file:
-        file.write(image_data)
-
-    print(f"Image saved as {file_path}")
-
-    # Send confirmation
-    emit('image_saved', {'message': f'Image {filename} saved successfully'})
+@app.route('/request_image', methods=['POST'])
+def send_image():
+    """Send an image only if the session token is valid."""
+    data = request.get_json()
+    video_name = data.get('video_name')
+    if not video_name:
+        return {'error': 'Missing video name'}, 400
+    image_paths = data.get('image_paths')
+    if not image_paths:
+        return {'error': 'Missing image paths'}, 400
     
+    image_list = {}
+    for image_number, image_path in enumerate(image_paths):
+        image_list[f"{video_name}_img{image_number}"] = (base64.encode(open(image_path, "rb").read()))
+        
+    response = requests.post(f"{AI_model_URL}/classify_image", json=image_list, headers={'API_KEY': API_KEY})
+    
+    return response.json(), response.status_code
     
 if __name__ == '__main__':
-    socketio.run(app, host='localhost', port=81, debug=True)
+    app.run(debug=True, port=8080)
