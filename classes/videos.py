@@ -41,9 +41,14 @@ def create_video():
     try:
         new_video = request.get_json()
         video_name = new_video.get('video_name')
+        location = new_video.get('location')
+        created_at = new_video.get('created_at')
+        current_status = new_video.get('current_status')
 
         with db as conn:
-            conn.execute('INSERT INTO videos (video_name) VALUES (?)', (video_name,))
+            conn.execute('''
+                         INSERT INTO videos (video_name, location, created_at, current_status) 
+                         VALUES (?, ?, ?, ?)''', (video_name, location, created_at, current_status))
 
         return jsonify(new_video), 201
     except Exception as e:
@@ -51,10 +56,12 @@ def create_video():
 
 @videos_bp.route('/videos/<int:video_id>', methods=['PUT'])
 @login_required
-def update_video(video_id):
+def update_video():
     try:
         updated_data = request.get_json()
-        video_name = updated_data.get('video_name')
+        video_id = updated_data.get('video_id')
+        new_status = updated_data.get('new_status')
+        new_location = updated_data.get('new_location')
 
         with db as conn:
             video = conn.execute('SELECT * FROM videos WHERE id = ?', (video_id,)).fetchone()
@@ -62,7 +69,9 @@ def update_video(video_id):
             if video is None:
                 return jsonify({'error': 'Video not found'}), 404
 
-            conn.execute('UPDATE videos SET video_name = ? WHERE id = ?', (video_name, video_id))
+            conn.execute('''UPDATE videos 
+                                SET status = ?, location = ?
+                                WHERE id = ?''', (new_status, new_location, video_id))
 
         return jsonify(updated_data), 200
     except Exception as e:

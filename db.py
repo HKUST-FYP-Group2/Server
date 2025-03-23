@@ -40,7 +40,7 @@ class DatabaseManager:
         conn.execute('''
             CREATE TABLE IF NOT EXISTS videos (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                file_name VARCHAR(255) NOT NULL,
+                video_name VARCHAR(255) NOT NULL,
                 location VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP NOT NULL,
                 current_status INT NOT NULL
