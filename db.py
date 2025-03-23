@@ -1,21 +1,32 @@
 import sqlite3
 
 class DatabaseManager:
-    def __init__(self, db_path:str):
+    def __init__(self, db_path:str, logger):
         self.db_path = db_path
         self.db_connection = None
-        self.connected = False
+        self.logger = logger
     
-    def start(self):
+    def __enter__(self):
         self.db_connection = sqlite3.connect(self.db_path)
-        self.db_connection.row_factory = sqlite3.Row
         self.connected = True
+        self.logger.info('Connected to database')
+        return self.db_connection
     
-    def stop(self):
-        self.db_connection.close()
-        self.connected = False
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.db_connection:
+            if exc_type is None:
+                self.logger.info("queries successful, commiting changes")
+                self.db_connection.commit()
+            else:
+                self.logger.error(f"Exception occured ({exc_type}): {exc_val} {exc_tb}")
+                self.logger.info("Rolling back changes")
+                self.db_connection.rollback()
+            self.db_connection.close()
+            self.db_connection = None
 
     def init_db(self):
+        if self.db_connection is None:
+            self.start()
         conn = self.db_connection
         conn.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -48,7 +59,5 @@ class DatabaseManager:
         ''')
                      
         conn.commit()
-        
-    def execute(self, query:str, *args):
-        return self.db_connection.execute(query, args)
-        
+
+dbManager = DatabaseManager('database.db')

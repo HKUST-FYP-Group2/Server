@@ -2,7 +2,7 @@ from flask import Blueprint, request
 from flask_login import current_user, login_required, UserMixin
 from flask_jwt_extended import create_access_token
 from flask_restful import Api, Resource
-from db import get_db_connection
+from db import dbManager as db
 
 # Create a Blueprint for users
 users_bp = Blueprint('users', __name__)
@@ -17,13 +17,13 @@ class User(UserMixin):
 
 # User resource for RESTful API
 class UserResource(Resource):
+    
     @login_required
     def get(self, user_id):
         """Get a user by ID."""
         try:
-            conn = get_db_connection()
-            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-            conn.close()
+            with db as conn:
+                user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
 
             if user is None:
                 return ({'error': 'User not found'}), 404
@@ -40,15 +40,13 @@ class UserResource(Resource):
     def delete(self, user_id):
         """Delete a user by ID."""
         try:
-            conn = get_db_connection()
-            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+            with db as conn:
+                user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
 
-            if user is None:
-                return ({'error': 'User not found'}), 404
+                if user is None:
+                    return ({'error': 'User not found'}), 404
 
-            conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
-            conn.commit()
-            conn.close()
+                conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
 
             access_token = create_access_token(identity=current_user.get_id())
             return ({
@@ -59,13 +57,13 @@ class UserResource(Resource):
             return ({'error': str(e)}), 400
 
 class UserListResource(Resource):
+    
     @login_required
     def get(self):
         """Get all users."""
         try:
-            conn = get_db_connection()
-            users = conn.execute('SELECT * FROM users').fetchall()
-            conn.close()
+            with db as conn:
+                users = conn.execute('SELECT * FROM users').fetchall()
             
             access_token = create_access_token(identity=current_user.get_id())
             return ({
@@ -83,11 +81,9 @@ class UserListResource(Resource):
             password = new_user['password']
             settings = new_user.get('projector_app_setting')
 
-            conn = get_db_connection()
-            conn.execute('INSERT INTO users (username, password, projector_app_setting) VALUES (?, ?, ?)', 
-                         (username, password, settings))
-            conn.commit()
-            conn.close()
+            with db as conn:
+                conn.execute('INSERT INTO users (username, password, projector_app_setting) VALUES (?, ?, ?)', 
+                            (username, password, settings))
 
             access_token = create_access_token(identity=username)
             return ({'message': 'A new user has been successfully created', 'token': access_token}), 201
@@ -96,18 +92,18 @@ class UserListResource(Resource):
 
 # Projector settings resource
 class ProjectorSettingsResource(Resource):
+    
     @login_required
     def get(self, user_id):
         """Get projector settings for a user by ID."""
         try:
-            conn = get_db_connection()
-            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+            with db as conn:
+                user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
             settings = user['projector_app_setting']
             
             if not settings:
                 return ({'error': 'No projector settings found for this user'}), 404
             
-            conn.close()
             access_token = create_access_token(identity=current_user.get_id())
             return ({
                 'settings': settings,
@@ -123,19 +119,16 @@ class ProjectorSettingsResource(Resource):
             updated_data = request.get_json()
             settings = updated_data.get('projector_app_setting')
 
-            conn = get_db_connection()
-            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+            with db as conn:
+                user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
 
-            if user is None:
-                return ({'error': 'User not found'}), 404
+                if user is None:
+                    return ({'error': 'User not found'}), 404
 
-            # Update only if settings are provided
-            if settings:
-                conn.execute('UPDATE users SET projector_app_setting = ? WHERE id = ?', 
-                             (settings, user_id))
-                conn.commit()
-
-            conn.close()
+                # Update only if settings are provided
+                if settings:
+                    conn.execute('UPDATE users SET projector_app_setting = ? WHERE id = ?', 
+                                (settings, user_id))
 
             access_token = create_access_token(identity=current_user.get_id())
             return ({

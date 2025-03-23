@@ -9,25 +9,10 @@ from flask_socketio import SocketIO, join_room, emit, send, disconnect
 
 from classes.users import users_bp, User
 from classes.videos import videos_bp
-from db import DatabaseManager
+from db import dbManager
 from user_auth import DeviceUUID, Login, Status, Logout, QRLogin
 
 app = Flask(__name__)
-
-dbManager = DatabaseManager('database.db')
-
-@app.before_request
-def before_request(): # whenever the app is on, the database connection is open
-    dbManager.start()
-    app.logger.info('Database connection opened.')
-
-@app.teardown_request
-def teardown_request(exception):
-    dbManager.stop()
-    if exception:
-        app.logger.error(exception)
-    else:
-        app.logger.info('Database connection closed.')
 
 # Blueprint registrations
 app.register_blueprint(users_bp)
@@ -87,5 +72,6 @@ def handle_login(data):
 # Run the server
 if __name__ == '__main__':
     # Path to your SSL certificate and key files
+    dbManager.init_db()
     ssl_context = ('./ssl_dynabot/cert.cert', './ssl_dynabot/key.key')
     socketio.run(app, host='0.0.0.0', port=8000, debug=True, ssl_context=ssl_context)

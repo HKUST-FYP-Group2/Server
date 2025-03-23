@@ -1,9 +1,9 @@
 import sys
 sys.path.append("..")
 from flask import Blueprint, request, jsonify
-from db import get_db_connection
 from flask_login import login_required
 from enum import Enum
+from db import dbManager as db
 
 # Create a Blueprint for users
 videos_bp = Blueprint('videos', __name__)
@@ -29,9 +29,8 @@ class Video:
 @login_required
 def get_all_videos():
     try:
-        conn = get_db_connection()
-        videos = conn.execute('SELECT * FROM videos').fetchall()
-        conn.close()
+        with db as conn:
+            videos = conn.execute('SELECT * FROM videos').fetchall()
         return jsonify([dict(video) for video in videos])
     except Exception as e:
         return jsonify({'error': str(e)}), 400
@@ -43,10 +42,8 @@ def create_video():
         new_video = request.get_json()
         video_name = new_video.get('video_name')
 
-        conn = get_db_connection()
-        conn.execute('INSERT INTO videos (video_name) VALUES (?)', (video_name,))
-        conn.commit()
-        conn.close()
+        with db as conn:
+            conn.execute('INSERT INTO videos (video_name) VALUES (?)', (video_name,))
 
         return jsonify(new_video), 201
     except Exception as e:
@@ -59,15 +56,13 @@ def update_video(video_id):
         updated_data = request.get_json()
         video_name = updated_data.get('video_name')
 
-        conn = get_db_connection()
-        video = conn.execute('SELECT * FROM videos WHERE id = ?', (video_id,)).fetchone()
+        with db as conn:
+            video = conn.execute('SELECT * FROM videos WHERE id = ?', (video_id,)).fetchone()
 
-        if video is None:
-            return jsonify({'error': 'Video not found'}), 404
+            if video is None:
+                return jsonify({'error': 'Video not found'}), 404
 
-        conn.execute('UPDATE videos SET video_name = ? WHERE id = ?', (video_name, video_id))
-        conn.commit()
-        conn.close()
+            conn.execute('UPDATE videos SET video_name = ? WHERE id = ?', (video_name, video_id))
 
         return jsonify(updated_data), 200
     except Exception as e:
@@ -77,15 +72,13 @@ def update_video(video_id):
 @login_required
 def delete_video(video_id):
     try:
-        conn = get_db_connection()
-        video = conn.execute('SELECT * FROM videos WHERE id = ?', (video_id,)).fetchone()
+        with db as conn:
+            video = conn.execute('SELECT * FROM videos WHERE id = ?', (video_id,)).fetchone()
 
-        if video is None:
-            return jsonify({'error': 'Video not found'}), 404
+            if video is None:
+                return jsonify({'error': 'Video not found'}), 404
 
-        conn.execute('DELETE FROM videos WHERE id = ?', (video_id,))
-        conn.commit()
-        conn.close()
+            conn.execute('DELETE FROM videos WHERE id = ?', (video_id,))
 
         return jsonify({'message': f'Successfully deleted video with ID = {video_id}'}), 200
     except Exception as e:
@@ -95,11 +88,9 @@ def delete_video(video_id):
 @login_required
 def delete_all_videos():
     try:
-        conn = get_db_connection()
-        conn.execute('DELETE FROM videos')
-        conn.commit()
-        conn.close()
-
+        with db as conn:
+            conn.execute('DELETE FROM videos')
+            
         return jsonify({'message': 'Successfully deleted all videos'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
