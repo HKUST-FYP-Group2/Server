@@ -1,4 +1,7 @@
 import sqlite3
+from logging import Logger
+
+logger = Logger('db')
 
 class DatabaseManager:
     def __init__(self, db_path:str, logger):
@@ -25,8 +28,6 @@ class DatabaseManager:
             self.db_connection = None
 
     def init_db(self):
-        if self.db_connection is None:
-            self.start()
         conn = self.db_connection
         conn.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -43,7 +44,7 @@ class DatabaseManager:
                 video_name VARCHAR(255) NOT NULL,
                 location VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP NOT NULL,
-                current_status INT NOT NULL
+                URL VARCHAR(255) NOT NULL
             )
         ''')
         
@@ -60,4 +61,4 @@ class DatabaseManager:
                      
         conn.commit()
 
-dbManager = DatabaseManager('database.db')
+dbManager = DatabaseManager('database.db',logger)

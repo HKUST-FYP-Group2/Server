@@ -1,4 +1,3 @@
-
 import os
 from flask import Flask, request, render_template
 from flask_cors import CORS
@@ -68,6 +67,8 @@ def handle_login(data):
     print(f'{room} has been created')
     # Server Emits login Event Back to Client
     emit('login', {'user_id': user_id}, room=room)
+
+
 
 # Run the server
 if __name__ == '__main__':
