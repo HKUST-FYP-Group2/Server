@@ -32,26 +32,34 @@ def alter_users_table():
 
 def alter_videos_table():
     conn = get_db_connection()
-    # Step 1: Create a new table with the desired schema
+
+    # Step 1: Drop the old 'video' table if it exists
+    conn.execute('DROP TABLE IF EXISTS video')
+
+    # Step 2: Create the new 'videos' table
     conn.execute('''
-        CREATE TABLE IF NOT EXISTS new_videos (
+        CREATE TABLE IF NOT EXISTS videos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            video_name TEXT NOT NULL
+            video_name TEXT NOT NULL,
+            location TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            URL TEXT NOT NULL
         )
     ''')
-    
-    # Step 2: Copy data from the old table to the new table
+
+    # Step 3: Create the new 'video_classification' table
     conn.execute('''
-        INSERT INTO new_videos (video_name)
-        SELECT video_name FROM videos
+        CREATE TABLE IF NOT EXISTS video_classification (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            video_id INTEGER NOT NULL,
+            cold_hot INTEGER NOT NULL,
+            dry_wet INTEGER NOT NULL,
+            clear_cloudy INTEGER NOT NULL,
+            calm_stormy INTEGER NOT NULL,
+            FOREIGN KEY (video_id) REFERENCES videos(id)
+        )
     ''')
-    
-    # Step 3: Drop the old table
-    conn.execute('DROP TABLE videos')
-    
-    # Step 4: Rename the new table to the original table name
-    conn.execute('ALTER TABLE new_videos RENAME TO videos')
-    
+
     conn.commit()
     conn.close()
 

@@ -9,7 +9,7 @@ from flask_socketio import SocketIO, join_room, emit, send, disconnect
 
 from classes.users import users_bp, User
 from classes.videos import videos_bp
-from db import get_db_connection
+from db import dbManager
 
 app = Flask(__name__)
 
@@ -29,31 +29,10 @@ jwt = JWTManager(app)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Create tables
-def init_db():
-    conn = get_db_connection()
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            projector_app_setting TEXT
-        )
-    ''')
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            video_name TEXT NOT NULL
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
 @login_manager.user_loader
 def load_user(user_id):
-    conn = get_db_connection()
-    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-    conn.close()
+    with dbManager as conn:
+        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     if user:
         return User(id=user['id'], username=user['username'], password=user['password'])
     return None
@@ -74,9 +53,8 @@ class Login(Resource):
         if not projector_app_setting:
             video_link = 'retrieved from server action?'
 
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-        conn.close()
+        with dbManager as conn:
+            user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
 
         if user and (user['password'] == password):
             user_obj = User(id=user['id'], username=user['username'], password=user['password'])
@@ -94,9 +72,8 @@ class Status(Resource):
     def get(self):
         user_id = get_jwt_identity()
 
-        conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
-        conn.close()
+        with dbManager as conn:
+            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
 
         if user:
             return {
@@ -186,7 +163,8 @@ def handle_login(data):
 
 # Run the server
 if __name__ == '__main__':
-    init_db()
+    with dbManager as conn:
+        dbManager.init_db()
     # Path to your SSL certificate and key files
     ssl_context = ('./ssl_dynabot/cert.cert', './ssl_dynabot/key.key')
-    socketio.run(app, host='0.0.0.0', port=8000, debug=True, ssl_context=ssl_context)
+    socketio.run(app, host='0.0.0.0', port=8080, debug=True, ssl_context=ssl_context)
