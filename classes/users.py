@@ -147,3 +147,4 @@ class ProjectorSettingsResource(Resource):
 api.add_resource(UserListResource, '/users')
 api.add_resource(UserResource, '/users/<int:user_id>')
 api.add_resource(ProjectorSettingsResource, '/users/<int:user_id>/pjt')
+
