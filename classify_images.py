@@ -9,8 +9,7 @@ import dotenv
 dotenv.load_dotenv(override=True)
 
 AI_model_URL = "http://127.0.0.1:8080"
-API_KEY = os.getenv("API_KEY")  # Load API key from environment
-
+API_KEY = os.getenv("AI_SERVER_VALID_API_KEY")  # Load API key from environment
 class SENDIMAGE_SCHEMA(BaseModel):
     video_name: str = Field(min_length=1)
     image_paths: list = Field(min_items=1)
@@ -32,10 +31,11 @@ def send_image(video_name, image_paths):
             encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
             image_list[f"{video_name}_img{image_number}"] = encoded_image
     input_data = {"num_images": len(image_paths), "images": image_list}
+
+    response = requests.post(f"{AI_model_URL}/classify_images", json=input_data, headers={'API-KEY': API_KEY})
     
-    response = requests.get(f"{AI_model_URL}/classify_images", json=input_data, headers={'API_KEY': API_KEY})
-    
-    return response.json(), response.status_code
+    return response, response.status_code
     
 
-send_image("video1", ["/home/hvgupta/FYP/Server/image.jpg"])
+response,_ = send_image("video1", ["/home/hvgupta/FYP/Server/images/image.jpg","/home/hvgupta/FYP/Server/images/400.jpg"])
+print(response.json())
