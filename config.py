@@ -1,4 +1,5 @@
 import os
+import uuid
 from flask import Flask, request, render_template
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -33,7 +34,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 @login_manager.user_loader
 def load_user(user_id):
-    user = dbManager.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    with dbManager as conn:
+        user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     if user:
         return User(id=user['id'], username=user['username'], password=user['password'])
     return None
@@ -72,6 +74,8 @@ def handle_login(data):
 
 # Run the server
 if __name__ == '__main__':
+    with dbManager as conn:
+        dbManager.init_db()
     # Path to your SSL certificate and key files
     dbManager.init_db()
     ssl_context = ('./ssl_dynabot/cert.cert', './ssl_dynabot/key.key')

@@ -11,6 +11,7 @@ class DatabaseManager:
     
     def __enter__(self):
         self.db_connection = sqlite3.connect(self.db_path)
+        self.db_connection.row_factory = sqlite3.Row
         self.connected = True
         self.logger.info('Connected to database')
         return self.db_connection

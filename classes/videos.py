@@ -1,6 +1,7 @@
 import sys
 sys.path.append("..")
 from flask import Blueprint, request, jsonify
+from db import dbManager
 from flask_login import login_required
 from enum import Enum
 from db import dbManager as db
@@ -13,8 +14,9 @@ videos_bp = Blueprint('videos', __name__)
 @login_required
 def get_all_videos():
     try:
-        with db as conn:
+        with dbManager as conn:
             videos = conn.execute('SELECT * FROM videos').fetchall()
+
         return jsonify([dict(video) for video in videos])
     except Exception as e:
         return jsonify({'error': str(e)}), 400
@@ -29,7 +31,7 @@ def create_video():
         created_at = new_video.get('created_at')
         video_url = new_video.get('video_url')
 
-        with db as conn:
+        with dbManager as conn:
             conn.execute('''
                          INSERT INTO videos (video_name, location, created_at, URL) 
                          VALUES (?, ?, ?, ?)''', (video_name, location, created_at, video_url))
@@ -47,7 +49,7 @@ def update_video():
         new_status = updated_data.get('new_status')
         new_location = updated_data.get('new_location')
 
-        with db as conn:
+        with dbManager as conn:
             video = conn.execute('SELECT * FROM videos WHERE id = ?', (video_id,)).fetchone()
 
             if video is None:
@@ -65,7 +67,7 @@ def update_video():
 @login_required
 def delete_video(video_id):
     try:
-        with db as conn:
+        with dbManager as conn:
             video = conn.execute('SELECT * FROM videos WHERE id = ?', (video_id,)).fetchone()
 
             if video is None:
@@ -81,7 +83,7 @@ def delete_video(video_id):
 @login_required
 def delete_all_videos():
     try:
-        with db as conn:
+        with dbManager as conn:
             conn.execute('DELETE FROM videos')
             
         return jsonify({'message': 'Successfully deleted all videos'}), 200
