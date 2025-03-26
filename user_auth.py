@@ -8,6 +8,7 @@ from flask_socketio import join_room, emit
 
 from db import DatabaseManager
 from classes.users import User
+from logger import common_logger
 
 class DeviceUUID(Resource):
     def get(self):
@@ -36,7 +37,7 @@ class Login(Resource):
 
             # Create a token for the authenticated user
             access_token = create_access_token(identity=user['id'])
-            print(access_token)
+            common_logger.info(f'Access token created: {access_token}')
             return {'message': 'Logged in successfully', 'user_id': user['id'], 'token': access_token}, 200
         return {'error': 'Invalid credentials'}, 401
 
@@ -98,7 +99,7 @@ class QRLogin(Resource):
         return {}, 200  # Correct return format
 
     def QRLogin_socketIO(self, data):
-        print(data)
+        common_logger.info(f'QRLogin_socketIO data: {data}')
         if not data or 'device_uuid' not in data:
             return
         device_uuid = data['device_uuid']
@@ -108,7 +109,7 @@ class QRLogin(Resource):
 
     @jwt_required()
     def SyncSetting_socketIO(self, data):
-        print(data)
+        common_logger.info(f'SyncSetting_socketIO data: {data}')
         user_id = get_jwt_identity()
         room = f'room_{user_id}'
         join_room(room)

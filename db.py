@@ -1,8 +1,5 @@
 import sqlite3
-from logging import Logger
-
-logger = Logger('db')
-
+from logger import common_logger
 class DatabaseManager:
     def __init__(self, db_path:str, logger):
         self.db_path = db_path
@@ -62,4 +59,4 @@ class DatabaseManager:
                      
         conn.commit()
 
-dbManager = DatabaseManager('database.db',logger)
+dbManager = DatabaseManager('database.db',common_logger)

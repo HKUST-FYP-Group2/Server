@@ -100,7 +100,6 @@ class ProjectorSettingsResource(Resource):
             with dbManager as conn:
                 user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
                 settings_json = user['projector_app_setting']
-                print(settings_json)
 
             if not settings_json:
                 return ({'error': 'No projector settings found for this user'}), 400

@@ -11,6 +11,7 @@ from classes.users import users_bp, User
 from classes.videos import videos_bp
 from db import dbManager
 from user_auth import DeviceUUID, Login, Status, Logout, QRLogin
+from logger import common_logger
 
 app = Flask(__name__)
 
@@ -56,17 +57,17 @@ def index():
 
 @socketio.on('message')
 def handle_message(msg):
-    print('Received message: ' + msg)
+    common_logger.info('Received message: ' + msg)
     send(msg, broadcast=True)
 
 @socketio.on('login')
 def handle_login(data):
     user_id = data['user_id']
-    print(data)
+    common_logger.info(f'Login data received: {data}')
     room = f'room_{user_id}'
     join_room(room)
-    print(f'User {user_id} joined {room}')
-    print(f'{room} has been created')
+    common_logger.info(f'User {user_id} joined {room}')
+    common_logger.info(f'{room} has been created')
     # Server Emits login Event Back to Client
     emit('login', {'user_id': user_id}, room=room)
 
