@@ -1,30 +1,29 @@
 import sqlite3
-# from logging import Logger
+from logging import Logger
 
-# logger = Logger('db')
+logger = Logger('db')
 
 class DatabaseManager:
-    # def __init__(self, db_path:str, logger):
-    def __init__(self, db_path:str):
+    def __init__(self, db_path:str, logger):
         self.db_path = db_path
         self.db_connection = None
-        # self.logger = logger
+        self.logger = logger
     
     def __enter__(self):
         self.db_connection = sqlite3.connect(self.db_path)
         self.db_connection.row_factory = sqlite3.Row
         self.connected = True
-        # self.logger.info('Connected to database')
+        self.logger.info('Connected to database')
         return self.db_connection
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.db_connection:
             if exc_type is None:
-                # self.logger.info("queries successful, commiting changes")
+                self.logger.info("queries successful, commiting changes")
                 self.db_connection.commit()
             else:
-                # self.logger.error(f"Exception occured ({exc_type}): {exc_val} {exc_tb}")
-                # self.logger.info("Rolling back changes")
+                self.logger.error(f"Exception occured ({exc_type}): {exc_val} {exc_tb}")
+                self.logger.info("Rolling back changes")
                 self.db_connection.rollback()
             self.db_connection.close()
             self.db_connection = None
@@ -60,8 +59,7 @@ class DatabaseManager:
                 calm_stormy INT NOT NULL     
             )      
         ''')
-                    
+                     
         conn.commit()
 
-# dbManager = DatabaseManager('database.db', logger)
-dbManager = DatabaseManager('database.db')
+dbManager = DatabaseManager('database.db',logger)

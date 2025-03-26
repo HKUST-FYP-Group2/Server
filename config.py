@@ -1,5 +1,5 @@
+import os
 import uuid
-
 from flask import Flask, request, render_template
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -18,8 +18,8 @@ app.register_blueprint(users_bp)
 app.register_blueprint(videos_bp)
 
 # For user session management
-app.secret_key = 'your_secret_key'  # Change this to a random secret key
-app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Change this to a secure key
+app.secret_key = os.getenv("SECRET_KEY")  # Change this to a random secret key
+app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")  # Change this to a secure key
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 
 # Setup login manager and JWTManager
@@ -92,15 +92,6 @@ class Logout(Resource):
         logout_user()
         return {'message': 'Logged out successfully'}, 200
 
-# Setup API
-api = Api(app)
-api.add_resource(DeviceUUID, '/uuid')
-api.add_resource(Login, '/login')
-api.add_resource(Status, '/status')
-api.add_resource(Logout, '/logout')
-
-#code below added by Leo
-# u may tidy up
 class QRLogin(Resource):
     @jwt_required()
     def post(self):
@@ -138,6 +129,12 @@ class QRLogin(Resource):
         join_room(room)
         emit('SyncSetting', data, room=room)
 
+# Setup API
+api = Api(app)
+api.add_resource(DeviceUUID, '/uuid')
+api.add_resource(Login, '/login')
+api.add_resource(Status, '/status')
+api.add_resource(Logout, '/logout')
 api.add_resource(QRLogin, '/QRLogin')
 #---------until here------------
 
@@ -167,4 +164,4 @@ if __name__ == '__main__':
         dbManager.init_db()
     # Path to your SSL certificate and key files
     ssl_context = ('./ssl_dynabot/cert.cert', './ssl_dynabot/key.key')
-    socketio.run(app, host='0.0.0.0', port=8080, debug=True, ssl_context=ssl_context)
+    socketio.run(app, host='0.0.0.0', port=8000, debug=True, ssl_context=ssl_context)
