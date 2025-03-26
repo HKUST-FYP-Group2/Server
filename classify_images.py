@@ -35,7 +35,3 @@ def send_image(video_name, image_paths):
     response = requests.post(f"{AI_model_URL}/classify_images", json=input_data, headers={'API-KEY': API_KEY})
     
     return response, response.status_code
-    
-
-response,_ = send_image("video1", ["/home/hvgupta/FYP/Server/images/image.jpg","/home/hvgupta/FYP/Server/images/400.jpg"])
-print(response.json())
