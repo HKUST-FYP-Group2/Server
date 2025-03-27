@@ -6,7 +6,7 @@ from flask_login import login_user, logout_user
 from flask_jwt_extended import create_access_token
 from flask_socketio import join_room, emit
 
-from db import DatabaseManager
+from db import dbManager
 from classes.users import User
 from logger import common_logger
 
@@ -16,10 +16,6 @@ class DeviceUUID(Resource):
         return {'uuid': str(random_uuid)}
 
 class Login(Resource):
-    def __init__(self, db_manager: DatabaseManager):
-        super(Login, self).__init__()
-        self.db_manager = db_manager
-
     def post(self):
         data = request.get_json()
         username = data['username']
@@ -29,7 +25,8 @@ class Login(Resource):
         if not projector_app_setting:
             video_link = 'retrieved from server action?'
 
-        user = self.db_manager.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+        with dbManager as conn:
+            user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
 
         if user and (user['password'] == password):
             user_obj = User(id=user['id'], username=user['username'], password=user['password'])
@@ -43,15 +40,12 @@ class Login(Resource):
 
 # Leo: changed to JWT
 class Status(Resource):
-    def __init__(self, dbManager: DatabaseManager):
-        super(Status,self).__init__()
-        self.dbManager = dbManager
-    
     @jwt_required()
     def get(self):
         user_id = get_jwt_identity()
 
-        user = self.dbManager.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+        with dbManager as conn:
+            user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
 
         if user:
             return {
@@ -71,14 +65,6 @@ class Logout(Resource):
         return {'message': 'Logged out successfully'}, 200
     
 class QRLogin(Resource):
-    def __init__(self, socketio):
-        super(QRLogin, self).__init__()
-        self.socketio = socketio
-
-        # Register WebSocket event handlers
-        self.socketio.on_event('QRLogin', self.QRLogin_socketIO)
-        self.socketio.on_event('SyncSetting', self.SyncSetting_socketIO)
-
     @jwt_required()
     def post(self):
         data = request.get_json()
@@ -90,7 +76,8 @@ class QRLogin(Resource):
         room = f'device_{device_uuid}'
 
         # Check if the room exists before emitting
-        if room not in self.socketio.server.manager.rooms.get('/', {}):
+        from config import socketio
+        if room not in socketio.server.manager.rooms.get('/', {}):
             return {'error': 'Invalid device'}, 400
 
         access_token = create_access_token(identity=user_id)

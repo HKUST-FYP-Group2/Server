@@ -3,12 +3,15 @@ sys.path.append("..")
 from flask import Blueprint, request, jsonify
 from db import dbManager
 from flask_login import login_required
-from enum import Enum
-from db import dbManager as db
 
 # Create a Blueprint for users
 videos_bp = Blueprint('videos', __name__)
 
+class Video:
+    def __init__(self, id, video_name):
+        self.id = id
+        self.video_name = video_name
+        
 # VIDEO-related functions
 @videos_bp.route('/videos', methods=['GET'])
 @login_required

@@ -78,6 +78,5 @@ if __name__ == '__main__':
     with dbManager as conn:
         dbManager.init_db()
     # Path to your SSL certificate and key files
-    dbManager.init_db()
     ssl_context = ('./ssl_dynabot/cert.cert', './ssl_dynabot/key.key')
     socketio.run(app, host='0.0.0.0', port=8000, debug=True, ssl_context=ssl_context)
