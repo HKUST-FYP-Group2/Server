@@ -1,20 +1,20 @@
 import ffmpeg
 import os
 
-def extract_images_from_mp4(mp4_file, output_dir, fps=1):
+def extract_images_from_video(video_file, output_dir, fps=1):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
+    video_name = os.path.basename(video_file)
     try:
         (
             ffmpeg
-            .input(mp4_file)
-            .output(os.path.join(output_dir, '%d.png'), vf='fps=' + str(fps))
+            .input(video_file)  # Set frame rate for extraction
+            .output(os.path.join(output_dir, f'{video_name}_%04d.jpg'), vf='fps=' + str(fps), loglevel='quiet')
             .run(overwrite_output=True)
         )
-        print(f"Images extracted to {output_dir}")
+        return output_dir
     except ffmpeg.Error as e:
-        print(f"An error occurred while processing {mp4_file}: {e}")
+        print(f"An error occurred while processing {video_file}: {e}")
 
 def process_videos(input_dir, output_base_dir, fps=1):
     # Iterate through all .mp4 files in the input directory
@@ -30,7 +30,7 @@ def process_videos(input_dir, output_base_dir, fps=1):
                 continue
 
             print(f"Processing {video_file}...")
-            extract_images_from_mp4(video_path, output_dir, fps)
+            extract_images_from_video(video_path, output_dir, fps)
 
 if __name__ == "__main__":
     input_directory = "/home/user/recordings"

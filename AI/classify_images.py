@@ -8,7 +8,7 @@ import dotenv
 
 dotenv.load_dotenv(override=True)
 
-AI_model_URL = "http://127.0.0.1:8080"
+AI_model_URL = os.getenv("AI_SERVER_URL")  # Load AI server URL from environment
 API_KEY = os.getenv("AI_SERVER_VALID_API_KEY")  # Load API key from environment
 class SENDIMAGE_SCHEMA(BaseModel):
     video_name: str = Field(min_length=1)
@@ -24,7 +24,8 @@ class SENDIMAGE_SCHEMA(BaseModel):
 
 def send_image(video_name, image_paths):
     """Send an image only if the session token is valid."""
-
+    if AI_model_URL is None or API_KEY is None:
+        return {"error": "AI server URL or API key is not set"}, 500
     image_list = {}
     for image_number, image_path in enumerate(image_paths):
         with open(image_path, "rb") as image_file:
