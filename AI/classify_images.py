@@ -10,6 +10,8 @@ dotenv.load_dotenv(override=True)
 
 AI_model_URL = os.getenv("AI_SERVER_URL")  # Load AI server URL from environment
 API_KEY = os.getenv("AI_SERVER_VALID_API_KEY")  # Load API key from environment
+
+print(AI_model_URL, API_KEY)
 class SENDIMAGE_SCHEMA(BaseModel):
     video_name: str = Field(min_length=1)
     image_paths: list = Field(min_items=1)
