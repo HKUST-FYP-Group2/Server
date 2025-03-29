@@ -31,7 +31,9 @@ if __name__ == "__main__":
         image_dir = download_images_of_video(video_name)
         image_paths = [os.path.join(image_dir, image) for image in os.listdir(image_dir)]
         response, status_code = send_image(video_name, image_paths)
-        
+        if status_code != 200:
+            print(f"Error: {response}") # basic error handling
+            continue
         video_path = os.path.join(CHECK_DIR, video_name)
         with dbManager as conn:
             id = conn.execute('''
