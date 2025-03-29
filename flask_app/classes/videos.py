@@ -1,7 +1,7 @@
 import sys
 sys.path.append("..")
 from flask import Blueprint, request, jsonify
-from db import dbManager
+from flask_app.db import dbManager
 from flask_login import login_required
 
 # Create a Blueprint for users
