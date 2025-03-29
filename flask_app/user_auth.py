@@ -6,9 +6,9 @@ from flask_login import login_user, logout_user
 from flask_jwt_extended import create_access_token
 from flask_socketio import join_room, emit
 
-from db import dbManager
-from classes.users import User
-from logger import common_logger
+from flask_app.db import dbManager
+from flask_app.classes.users import User
+from flask_app.logger import common_logger
 
 class DeviceUUID(Resource):
     def get(self):

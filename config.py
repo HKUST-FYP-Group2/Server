@@ -6,11 +6,11 @@ from flask_login import LoginManager
 from flask_restful import Api
 from flask_socketio import SocketIO, join_room, emit, send, disconnect
 
-from classes.users import users_bp, User
-from classes.videos import videos_bp
-from db import dbManager
-from logger import common_logger
-from user_auth import DeviceUUID, Login, Status, Logout, QRLogin, SyncSetting_socketIO, QRLogin_socketIO
+from flask_app.classes.users import users_bp, User
+from flask_app.classes.videos import videos_bp
+from flask_app.db import dbManager
+from flask_app.logger import common_logger
+from flask_app.user_auth import DeviceUUID, Login, Status, Logout, QRLogin, SyncSetting_socketIO, QRLogin_socketIO
 
 app = Flask(__name__)
 
@@ -78,5 +78,5 @@ if __name__ == '__main__':
     with dbManager as conn:
         dbManager.init_db()
     # Path to your SSL certificate and key files
-    ssl_context = ('../ssl_dynabot/cert.cert', '../ssl_dynabot/key.key')
+    ssl_context = ('./ssl_dynabot/cert.cert', './ssl_dynabot/key.key')
     socketio.run(app, host='0.0.0.0', port=8000, debug=True, ssl_context=ssl_context)

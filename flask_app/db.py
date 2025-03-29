@@ -1,5 +1,5 @@
 import sqlite3
-from logger import common_logger
+from flask_app.logger import common_logger
 
 class DatabaseManager:
     def __init__(self, db_path:str, logger):

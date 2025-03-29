@@ -2,8 +2,9 @@ from flask import Blueprint, request
 from flask_login import current_user, UserMixin
 from flask_jwt_extended import create_access_token, jwt_required
 from flask_restful import Api, Resource
-from db import dbManager
 import json
+
+from flask_app.db import dbManager
 
 # Create a Blueprint for users
 users_bp = Blueprint('users', __name__)
