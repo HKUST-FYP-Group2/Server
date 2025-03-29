@@ -10,8 +10,8 @@ from flask_socketio import SocketIO, join_room, emit, send, disconnect
 from classes.users import users_bp, User
 from classes.videos import videos_bp
 from db import dbManager
-from user_auth import DeviceUUID, Login, Status, Logout, QRLogin
 from logger import common_logger
+from user_auth import DeviceUUID, Login, Status, Logout, QRLogin, SyncSetting_socketIO, QRLogin_socketIO
 
 app = Flask(__name__)
 
@@ -71,7 +71,8 @@ def handle_login(data):
     # Server Emits login Event Back to Client
     emit('login', {'user_id': user_id}, room=room)
 
-
+socketio.on('SyncSetting')(SyncSetting_socketIO)
+socketio.on('QRLogin')(QRLogin_socketIO)
 
 # Run the server
 if __name__ == '__main__':

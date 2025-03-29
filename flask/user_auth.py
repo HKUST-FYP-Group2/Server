@@ -85,19 +85,21 @@ class QRLogin(Resource):
 
         return {}, 200  # Correct return format
 
-    def QRLogin_socketIO(self, data):
-        common_logger.info(f'QRLogin_socketIO data: {data}')
-        if not data or 'device_uuid' not in data:
-            return
-        device_uuid = data['device_uuid']
-        room = f'device_{device_uuid}'
-        join_room(room)
-        emit('QRLogin', {'uuid': device_uuid, 'login_success': 'false'}, room=room)
 
-    @jwt_required()
-    def SyncSetting_socketIO(self, data):
-        common_logger.info(f'SyncSetting_socketIO data: {data}')
-        user_id = get_jwt_identity()
-        room = f'room_{user_id}'
-        join_room(room)
-        emit('SyncSetting', data, room=room)
+def QRLogin_socketIO(data):
+    common_logger.info(f'QRLogin_socketIO data: {data}')
+    if not data or 'device_uuid' not in data:
+        return
+    device_uuid = data['device_uuid']
+    room = f'device_{device_uuid}'
+    join_room(room)
+    emit('QRLogin', {'uuid': device_uuid, 'login_success': 'false'}, room=room)
+
+@jwt_required()
+def SyncSetting_socketIO(data):
+    common_logger.info(f'SyncSetting_socketIO data: {data}')
+    user_id = get_jwt_identity()
+    room = f'room_{user_id}'
+    join_room(room)
+    emit('SyncSetting', data, room=room)
+

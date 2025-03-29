@@ -3,7 +3,7 @@ from datetime import datetime
 
 from AI.classify_images import send_image
 from AI.Adapter.video_classifier_adapter import extract_images_from_video
-from flask_app.db import dbManager
+from flask.db import dbManager
 
 CHECK_DIR = "/home/user/recordings"
 IMAGE_DIR = "/home/user/images/"
