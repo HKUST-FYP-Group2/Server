@@ -1,5 +1,3 @@
-from flask import Flask, request
-from flask_cors import CORS
 from pydantic import BaseModel, Field, field_validator
 import os
 import base64
