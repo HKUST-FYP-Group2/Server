@@ -57,43 +57,13 @@ class Status(Resource):
         else:
             return {'logged_in': False}, 401
 
-#Leo: I think the logout_user function is only for flask-login which is session, but not JWT
+
 class Logout(Resource):
     @jwt_required()
     def post(self):
         logout_user()
         return {'message': 'Logged out successfully'}, 200
-    
-class QRLogin(Resource):
-    @jwt_required()
-    def post(self):
-        data = request.get_json()
-        if not data or 'device_uuid' not in data:
-            return {'error': 'Invalid request'}, 400
 
-        user_id = get_jwt_identity()
-        device_uuid = data['device_uuid']
-        room = f'device_{device_uuid}'
-
-        # Check if the room exists before emitting
-        from config import socketio
-        if room not in socketio.server.manager.rooms.get('/', {}):
-            return {'error': 'Invalid device'}, 400
-
-        access_token = create_access_token(identity=user_id)
-        emit('QRLogin', {'login_success': 'true', 'user_id': user_id, 'token': access_token}, room=room, namespace='/')
-
-        return {}, 200  # Correct return format
-
-
-def QRLogin_socketIO(data):
-    common_logger.info(f'QRLogin_socketIO data: {data}')
-    if not data or 'device_uuid' not in data:
-        return
-    device_uuid = data['device_uuid']
-    room = f'device_{device_uuid}'
-    join_room(room)
-    emit('QRLogin', {'uuid': device_uuid, 'login_success': 'false'}, room=room)
 
 @jwt_required()
 def SyncSetting_socketIO(data):
