@@ -35,7 +35,7 @@ class Login(Resource):
             # Create a token for the authenticated user
             access_token = create_access_token(identity=user['id'])
             common_logger.info(f'Access token created: {access_token}')
-            return {'message': 'Logged in successfully', 'user_id': user['id'], 'token': access_token}, 200
+            return {'message': 'Logged in successfully', 'user_id': user['id'], 'stream_key': user['stream_key'], 'token': access_token}, 200
         return {'error': 'Invalid credentials'}, 401
 
 # Leo: changed to JWT

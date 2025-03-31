@@ -81,10 +81,11 @@ class UserListResource(Resource):
             username = new_user['username']
             password = new_user['password']
             settings = new_user.get('projector_app_setting')
+            stream_key = new_user.get('stream_key')
 
             with dbManager as conn:
-                conn.execute('INSERT INTO users (username, password, projector_app_setting) VALUES (?, ?, ?)', 
-                            (username, password, settings))
+                conn.execute('INSERT INTO users (username, password, projector_app_setting, stream_key) VALUES (?, ?, ?, ?)', 
+                            (username, password, settings, stream_key))
                 conn.commit()
 
             access_token = create_access_token(identity=username)
@@ -143,8 +144,56 @@ class ProjectorSettingsResource(Resource):
         except Exception as e:
             return ({'error': str(e)}), 200
 
+# Projector settings resource
+class StreamKeyResource(Resource):
+    @jwt_required()
+    def get(self, user_id):
+        """Get stream key for a user by ID."""
+        try:
+            with dbManager as conn:
+                user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+                stream_key = user['stream_key']
+
+            if not stream_key:
+                return ({'error': 'No stream key found for this user'}), 400
+
+            access_token = create_access_token(identity=current_user.get_id())
+            return ({
+                'stream_key': stream_key,
+                'token': access_token
+            }), 200
+        except Exception as e:
+            return ({'error': str(e)}), 400
+
+    @jwt_required()
+    def put(self, user_id):
+        """Update stream key for a user by ID."""
+        try:
+            updated_data = request.get_json()
+            stream_key = updated_data.get('stream_key')
+
+            with dbManager as conn:
+                user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+
+                if user is None:
+                    return ({'error': 'User not found'}), 404
+
+                if stream_key:
+                    conn.execute('UPDATE users SET stream_key = ? WHERE id = ?',
+                                (stream_key, user_id))
+                    conn.commit()
+
+            access_token = create_access_token(identity=current_user.get_id())
+            return ({
+                'stream_key': stream_key,
+                'token': access_token
+            }), 200
+        except Exception as e:
+            return ({'error': str(e)}), 200
+        
 # Register the resources with the API
 api.add_resource(UserListResource, '/users')
 api.add_resource(UserResource, '/users/<int:user_id>')
 api.add_resource(ProjectorSettingsResource, '/users/<int:user_id>/pjt')
+api.add_resource(StreamKeyResource, '/users/<int:user_id>/sk')
 
