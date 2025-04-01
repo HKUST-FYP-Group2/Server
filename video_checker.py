@@ -51,8 +51,8 @@ if __name__ == "__main__":
                 RETURNING id'''
                 , (video_name, video_path, os.path.getmtime(video_path), f"https://virtualwindow.cam/recordings/{video_name}"))
             id = id.fetchone()[0]
-            hot_cold, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(response)
+            hot_cold, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(response) 
             conn.execute('''
                 INSERT INTO video_classification (video_id, cold_hot, dry_wet, clear_cloudy, calm_stormy)
                 VALUES (?, ?, ?, ?, ?)'''
-                , (id, response['cold_hot'], response['dry_wet'], response['clear_cloudy'], response['calm_stormy']))
+                , (id, hot_cold, dry_wet, clear_cloudy, calm_stormy))  # Use majority values
