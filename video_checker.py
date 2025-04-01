@@ -1,3 +1,4 @@
+import pdb
 import os
 from datetime import datetime
 from collections import Counter
@@ -35,24 +36,32 @@ def get_majority_classification(classifications):
     return cold_hot, dry_wet, clear_cloudy, calm_stormy
 
 if __name__ == "__main__":
+    pdb.set_trace()
     video_files = get_video_name_after_prev_run(CHECK_DIR, CRON_PERIOD)
     for video_name in video_files:
         image_dir = download_images_of_video(video_name)
         image_paths = [os.path.join(image_dir, image) for image in os.listdir(image_dir)]
         response, status_code = send_image(video_name, image_paths)
+        
         if status_code != 200:
-            print(f"Error: {response}") # basic error handling
+            print(f"Error: {response}")  # basic error handling
             continue
+
         video_path = os.path.join(CHECK_DIR, video_name)
         with dbManager as conn:
-            id = conn.execute('''
+            cursor = conn.execute('''
                 INSERT INTO videos (video_name, location, created_at, URL)
-                VALUES (?, ?, ?, ?)
-                RETURNING id'''
+                VALUES (?, ?, ?, ?)'''
                 , (video_name, video_path, os.path.getmtime(video_path), f"https://virtualwindow.cam/recordings/{video_name}"))
-            id = id.fetchone()[0]
-            hot_cold, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(response) 
+            id = cursor.lastrowid  
+
+            classification_dict = []
+            for key in response.keys():
+                classification_dict.append(response[key])
+            cold_hot, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(classification_dict)
+
             conn.execute('''
                 INSERT INTO video_classification (video_id, cold_hot, dry_wet, clear_cloudy, calm_stormy)
                 VALUES (?, ?, ?, ?, ?)'''
-                , (id, hot_cold, dry_wet, clear_cloudy, calm_stormy))  # Use majority values
+                , (id, cold_hot, dry_wet, clear_cloudy, calm_stormy))
+
