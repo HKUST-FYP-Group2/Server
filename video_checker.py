@@ -29,10 +29,10 @@ def download_images_of_video(video_name:str):
     return output_dir
 
 def get_majority_classification(classifications):
-    cold_hot = Counter([int(classification['cold_hot'] )for classification in classifications]).most_common(1)[0][0]
-    dry_wet = Counter([int(classification['dry_wet']) for classification in classifications]).most_common(1)[0][0]
-    clear_cloudy = Counter([int(classification['clear_cloudy']) for classification in classifications]).most_common(1)[0][0]
-    calm_stormy = Counter([int(classification['calm_stormy']) for classification in classifications]).most_common(1)[0][0]
+    cold_hot = Counter([int(classification['cold-hot'] )for classification in classifications]).most_common(1)[0][0]
+    dry_wet = Counter([int(classification['dry-wet']) for classification in classifications]).most_common(1)[0][0]
+    clear_cloudy = Counter([int(classification['clear-cloudy']) for classification in classifications]).most_common(1)[0][0]
+    calm_stormy = Counter([int(classification['calm-stormy']) for classification in classifications]).most_common(1)[0][0]
     return cold_hot, dry_wet, clear_cloudy, calm_stormy
 
 if __name__ == "__main__":
