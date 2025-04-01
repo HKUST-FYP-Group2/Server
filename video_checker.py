@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from collections import Counter
 
 from AI_Adapter.classify_images import send_image
 from AI_Adapter.video_classifier_adapter import extract_images_from_video
@@ -23,7 +24,13 @@ def download_images_of_video(video_name:str):
     output_dir = os.path.join(IMAGE_DIR, video_name)
     output_dir = extract_images_from_video(video_file, output_dir)
     return output_dir
-    
+
+def get_majority_classification(classifications):
+    cold_hot = Counter([classification['cold_hot'] for classification in classifications]).most_common(1)[0][0]
+    dry_wet = Counter([classification['dry_wet'] for classification in classifications]).most_common(1)[0][0]
+    clear_cloudy = Counter([classification['clear_cloudy'] for classification in classifications]).most_common(1)[0][0]
+    calm_stormy = Counter([classification['calm_stormy'] for classification in classifications]).most_common(1)[0][0]
+    return cold_hot, dry_wet, clear_cloudy, calm_stormy
 
 if __name__ == "__main__":
     video_files = get_video_name_after_prev_run(CHECK_DIR, CRON_PERIOD)
@@ -42,6 +49,7 @@ if __name__ == "__main__":
                 RETURNING id'''
                 , (video_name, video_path, os.path.getmtime(video_path), f"https://virtualwindow.cam/recordings/{video_name}"))
             id = id.fetchone()[0]
+            hot_cold, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(response.json())
             conn.execute('''
                 INSERT INTO video_classification (video_id, cold_hot, dry_wet, clear_cloudy, calm_stormy)
                 VALUES (?, ?, ?, ?, ?)'''
