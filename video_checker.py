@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from collections import Counter
+from pathlib import Path
 
 from AI_Adapter.classify_images import send_image
 from AI_Adapter.video_classifier_adapter import extract_images_from_video
@@ -21,7 +22,8 @@ def get_video_name_after_prev_run(video_dir:str, cron_period:int):
 
 def download_images_of_video(video_name:str):
     video_file = os.path.join(CHECK_DIR, video_name)
-    output_dir = os.path.join(IMAGE_DIR, video_name)
+    dir_name = Path(video_file).stem
+    output_dir = os.path.join(IMAGE_DIR, dir_name)
     output_dir = extract_images_from_video(video_file, output_dir)
     return output_dir
 
