@@ -1,8 +1,10 @@
 import sys
 sys.path.append("..")
 from flask import Blueprint, request, jsonify
+from flask_login import current_user
 from flask_app.db import dbManager
 from flask_login import login_required
+import os
 
 # Create a Blueprint for users
 videos_bp = Blueprint('videos', __name__)
@@ -11,7 +13,7 @@ class Video:
     def __init__(self, id, video_name):
         self.id = id
         self.video_name = video_name
-        
+
 # VIDEO-related functions
 @videos_bp.route('/videos', methods=['GET'])
 @login_required
@@ -23,7 +25,26 @@ def get_all_videos():
         return jsonify([dict(video) for video in videos])
     except Exception as e:
         return jsonify({'error': str(e)}), 400
-    
+
+@videos_bp.route('/files', methods=['GET'])
+def list_files():
+    try:
+        # Define the target directory
+        directory = '/home/user/recordings/admin_key'
+
+        user_id = current_user.get_id()
+        print(f"User ID: {user_id}")
+        # Check if the directory exists
+        if not os.path.exists(directory):
+            return jsonify({'error': f'Directory {directory} does not exist'}), 400
+
+        # List all files in the directory
+        files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+
+        return jsonify({'files': files}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
 @videos_bp.route('/videos', methods=['POST'])
 @login_required
 def create_video():
@@ -36,7 +57,7 @@ def create_video():
 
         with dbManager as conn:
             conn.execute('''
-                         INSERT INTO videos (video_name, location, created_at, URL) 
+                         INSERT INTO videos (video_name, location, created_at, URL)
                          VALUES (?, ?, ?, ?)''', (video_name, location, created_at, video_url))
 
         return jsonify(new_video), 201
@@ -58,7 +79,7 @@ def update_video():
             if video is None:
                 return jsonify({'error': 'Video not found'}), 404
 
-            conn.execute('''UPDATE videos 
+            conn.execute('''UPDATE videos
                                 SET location = ?
                                 WHERE id = ?''', (new_status, new_location, video_id))
 
@@ -88,7 +109,7 @@ def delete_all_videos():
     try:
         with dbManager as conn:
             conn.execute('DELETE FROM videos')
-            
+
         return jsonify({'message': 'Successfully deleted all videos'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
