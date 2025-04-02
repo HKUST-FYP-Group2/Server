@@ -2,9 +2,8 @@ import sys
 sys.path.append("..")
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token
-from flask_login import current_user
+from flask_login import current_user, login_required
 from flask_app.db import dbManager
-from flask_login import login_required
 import os
 
 # Create a Blueprint for users
@@ -27,7 +26,7 @@ class Video:
 #     except Exception as e:
 #         return jsonify({'error': str(e)}), 400
 
-@videos_bp.route('/videos', methods=['POST'])
+@videos_bp.route('/get_videos', methods=['POST'])
 @login_required
 def list_videos():
     try:
