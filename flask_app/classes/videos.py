@@ -27,7 +27,7 @@ class Video:
 #     except Exception as e:
 #         return jsonify({'error': str(e)}), 400
 
-@videos_bp.route('/videos', methods=['GET'])
+@videos_bp.route('/videos', methods=['POST'])
 @login_required
 def list_videos():
     try:
