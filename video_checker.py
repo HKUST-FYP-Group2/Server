@@ -3,6 +3,18 @@ import os
 from datetime import datetime
 from collections import Counter
 from pathlib import Path
+from pydantic import BaseModel
+
+class videos_SCHEMA(BaseModel):
+    user_id: int
+    video_name: str
+    location: str
+    created_at: datetime
+    url: str
+    cold_hot: int
+    dry_wet: int
+    clear_cloudy: int
+    calm_stormy: int
 
 from AI_Adapter.classify_images import send_image
 from AI_Adapter.video_classifier_adapter import extract_images_from_video
@@ -48,20 +60,13 @@ if __name__ == "__main__":
             continue
 
         video_path = os.path.join(CHECK_DIR, video_name)
+        classification_dict = []
+        for key in response.keys():
+            classification_dict.append(response[key])
+        cold_hot, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(classification_dict)
+        
         with dbManager as conn:
             cursor = conn.execute('''
-                INSERT INTO videos (video_name, location, created_at, URL)
-                VALUES (?, ?, ?, ?)'''
-                , (video_name, video_path, os.path.getmtime(video_path), f"https://virtualwindow.cam/recordings/{video_name}"))
-            id = cursor.lastrowid  
-
-            classification_dict = []
-            for key in response.keys():
-                classification_dict.append(response[key])
-            cold_hot, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(classification_dict)
-
-            conn.execute('''
-                INSERT INTO video_classification (video_id, cold_hot, dry_wet, clear_cloudy, calm_stormy)
-                VALUES (?, ?, ?, ?, ?)'''
-                , (id, cold_hot, dry_wet, clear_cloudy, calm_stormy))
-
+            INSERT INTO videos (user_id, video_name, location, created_at, url, cold_hot, dry_wet, clear_cloudy, calm_stormy)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            (1, video_name, CHECK_DIR, datetime.now(), video_path, cold_hot, dry_wet, clear_cloudy, calm_stormy))
