@@ -60,4 +60,4 @@ class DatabaseManager:
                      
         conn.commit()
 
-dbManager = DatabaseManager('database.db',common_logger)
+dbManager = DatabaseManager('./database.db',common_logger)
