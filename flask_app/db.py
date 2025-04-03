@@ -1,5 +1,20 @@
 import sqlite3
 from flask_app.logger import common_logger
+import os
+from pydantic import BaseModel
+from logging import getLogger
+
+
+class videos_SCHEMA(BaseModel):
+    user_id: int
+    video_name: str
+    location: str
+    created_at: str
+    url: str
+    cold_hot: int
+    dry_wet: int
+    clear_cloudy: int
+    calm_stormy: int
 
 class DatabaseManager:
     def __init__(self, db_path:str, logger):
@@ -39,25 +54,19 @@ class DatabaseManager:
         
         conn.execute('''
             CREATE TABLE IF NOT EXISTS videos (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                video_name VARCHAR(255) NOT NULL,
-                location VARCHAR(255) NOT NULL,
-                created_at TIMESTAMP NOT NULL,
-                URL VARCHAR(255) NOT NULL
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                video_name TEXT NOT NULL,
+                location TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                url TEXT NOT NULL,
+                cold_hot INTEGER NOT NULL,
+                dry_wet INTEGER NOT NULL,
+                clear_cloudy INTEGER NOT NULL,
+                calm_stormy INTEGER NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users (id)
             )
-        ''')
-        
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS video_classification (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                video_id REFERENCES videos(id),
-                cold_hot INT NOT NULL,
-                dry_wet INT NOT NULL,
-                clear_cloudy INT NOT NULL,
-                calm_stormy INT NOT NULL     
-            )      
-        ''')
-                     
+                     ''')     
         conn.commit()
 
 dbManager = DatabaseManager('database.db',common_logger)

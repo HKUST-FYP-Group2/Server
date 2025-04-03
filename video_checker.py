@@ -5,20 +5,9 @@ from collections import Counter
 from pathlib import Path
 from pydantic import BaseModel
 
-class videos_SCHEMA(BaseModel):
-    user_id: int
-    video_name: str
-    location: str
-    created_at: datetime
-    url: str
-    cold_hot: int
-    dry_wet: int
-    clear_cloudy: int
-    calm_stormy: int
-
 from AI_Adapter.classify_images import send_image
 from AI_Adapter.video_classifier_adapter import extract_images_from_video
-from flask_app.db import dbManager
+from flask_app.db import dbManager, videos_SCHEMA
 from flask import Flask
 from flask_jwt_extended import create_access_token
 from flask_login import current_user
@@ -106,4 +95,5 @@ if __name__ == "__main__":
             cursor = conn.execute('''
             INSERT INTO videos (user_id, video_name, location, created_at, url, cold_hot, dry_wet, clear_cloudy, calm_stormy)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-            (1, video_name, CHECK_DIR, datetime.now(), video_path, cold_hot, dry_wet, clear_cloudy, calm_stormy))
+            (current_user.get_id(), video_name, os.path.join(CHECK_DIR, video_name), datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
+             video_path, cold_hot, dry_wet, clear_cloudy, calm_stormy))
