@@ -69,4 +69,5 @@ class DatabaseManager:
                      ''')     
         conn.commit()
 
-dbManager = DatabaseManager('./database.db',common_logger)
+current_directory = os.path.dirname(os.path.abspath(__file__))
+dbManager = DatabaseManager(current_directory+'/database.db',common_logger)
