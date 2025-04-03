@@ -1,7 +1,7 @@
 import sys
 sys.path.append("..")
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from flask_login import current_user, login_required
 from flask_app.db import dbManager
 import os
@@ -13,7 +13,7 @@ class Video:
     def __init__(self, id, video_name):
         self.id = id
         self.video_name = video_name
-        
+
 # VIDEO-related functions
 # @videos_bp.route('/videos', methods=['GET'])
 # @login_required
@@ -27,12 +27,15 @@ class Video:
 #         return jsonify({'error': str(e)}), 400
 
 @videos_bp.route('/get_videos', methods=['POST'])
-@login_required
+@jwt_required()
 def list_videos():
     try:
         # Get the user ID of the current user
-        user_id = current_user.get_id()
-
+        user_id = get_jwt_identity()
+        
+        if not user_id:
+            return jsonify({'error': f'User not authenticated with user_id {user_id}'}), 401
+        
         # Make an internal API call to get the stream key
         with current_app.test_client() as client:
             # Use the JWT token of the current user for authentication
@@ -40,10 +43,11 @@ def list_videos():
                 'Authorization': f'Bearer {create_access_token(identity=user_id)}'
             }
             response = client.get(f'/users/{user_id}/sk', headers=headers)
-
+            
+        
         # Parse the response from the StreamKeyResource API
         if response.status_code != 200:
-            return jsonify({'error': 'Failed to retrieve stream key'}), response.status_code
+            return jsonify({'error': f'Failed to retrieve stream key with response {response}'}), response.status_code
 
         stream_key = response.get_json().get('stream_key')
         if not stream_key:
@@ -64,7 +68,7 @@ def list_videos():
         return jsonify({'error': str(e)}), 400
     
 @videos_bp.route('/videos', methods=['POST'])
-@login_required
+@jwt_required()
 def create_video():
     try:
         new_video = request.get_json()
@@ -83,7 +87,7 @@ def create_video():
         return jsonify({'error': str(e)}), 400
 
 @videos_bp.route('/videos/<int:video_id>', methods=['PUT'])
-@login_required
+@jwt_required()
 def update_video():
     try:
         updated_data = request.get_json()
@@ -106,7 +110,7 @@ def update_video():
         return jsonify({'error': str(e)}), 400
 
 @videos_bp.route('/videos/<int:video_id>', methods=['DELETE'])
-@login_required
+@jwt_required()
 def delete_video(video_id):
     try:
         with dbManager as conn:
@@ -122,7 +126,7 @@ def delete_video(video_id):
         return jsonify({'error': str(e)}), 400
 
 @videos_bp.route('/videos', methods=['DELETE'])
-@login_required
+@jwt_required()
 def delete_all_videos():
     try:
         with dbManager as conn:

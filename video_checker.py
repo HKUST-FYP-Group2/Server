@@ -7,8 +7,45 @@ from pathlib import Path
 from AI_Adapter.classify_images import send_image
 from AI_Adapter.video_classifier_adapter import extract_images_from_video
 from flask_app.db import dbManager
+from flask import Flask
+from flask_jwt_extended import create_access_token
+from flask_login import current_user
 
-CHECK_DIR = "/home/user/recordings"
+def get_stream_key():
+    try:
+        # Get the user ID of the current user
+        user_id = current_user.get_id()
+
+        # Create a Flask app context to use `current_app`
+        app = Flask(__name__)
+        with app.app_context():
+            with app.test_client() as client:
+                # Use the JWT token of the current user for authentication
+                headers = {
+                    'Authorization': f'Bearer {create_access_token(identity=user_id)}'
+                }
+                response = client.get(f'/users/{user_id}/sk', headers=headers)
+
+            # Parse the response from the StreamKeyResource API
+            if response.status_code != 200:
+                raise ValueError('Failed to retrieve stream key')
+
+            stream_key = response.get_json().get('stream_key')
+            if not stream_key:
+                raise ValueError('Stream key not found')
+
+            return stream_key
+    except Exception as e:
+        raise ValueError(f'Error retrieving stream key: {str(e)}')
+
+# Dynamically set CHECK_DIR using the stream key
+try:
+    stream_key = get_stream_key()
+    CHECK_DIR = f"/home/user/recordings/{stream_key}"
+except ValueError as e:
+    print(f"Error: {e}")
+    CHECK_DIR = "/home/user/recordings"  # Fallback to default directory
+
 IMAGE_DIR = "/home/user/images/"
 CRON_PERIOD = 60*10  # 10 minutes
 
@@ -36,7 +73,7 @@ def get_majority_classification(classifications):
     return cold_hot, dry_wet, clear_cloudy, calm_stormy
 
 if __name__ == "__main__":
-    pdb.set_trace()
+    # pdb.set_trace()
     video_files = get_video_name_after_prev_run(CHECK_DIR, CRON_PERIOD)
     for video_name in video_files:
         image_dir = download_images_of_video(video_name)
@@ -64,4 +101,3 @@ if __name__ == "__main__":
                 INSERT INTO video_classification (video_id, cold_hot, dry_wet, clear_cloudy, calm_stormy)
                 VALUES (?, ?, ?, ?, ?)'''
                 , (id, cold_hot, dry_wet, clear_cloudy, calm_stormy))
-

@@ -191,9 +191,34 @@ class StreamKeyResource(Resource):
         except Exception as e:
             return ({'error': str(e)}), 200
         
+    @jwt_required()
+    def post(self):
+        """Get user ID by stream key."""
+        try:
+            data = request.get_json()
+            stream_key = data.get('stream_key')
+
+            if not stream_key:
+                return ({'error': 'Stream key is required'}), 400
+
+            with dbManager as conn:
+                user = conn.execute('SELECT id FROM users WHERE stream_key = ?', (stream_key,)).fetchone()
+
+            if user is None:
+                return ({'error': 'No user found with this stream key'}), 404
+
+            access_token = create_access_token(identity=current_user.get_id())
+            return ({
+                'user_id': user['id'],
+                'token': access_token
+            }), 200
+        except Exception as e:
+            return ({'error': str(e)}), 400
+    
+
 # Register the resources with the API
 api.add_resource(UserListResource, '/users')
 api.add_resource(UserResource, '/users/<int:user_id>')
 api.add_resource(ProjectorSettingsResource, '/users/<int:user_id>/pjt')
-api.add_resource(StreamKeyResource, '/users/<int:user_id>/sk')
+api.add_resource(StreamKeyResource, '/users/<int:user_id>/sk', '/users/sk')
 
