@@ -111,7 +111,7 @@ class UserListResource(Resource):
 
             with dbManager as conn:
                 conn.execute('INSERT INTO users (username, password, projector_app_setting, stream_key) VALUES (?, ?, ?, ?)', 
-                            (username, password, settings, stream_key))
+                            (username, password, json.dumps(settings), stream_key))
                 conn.commit()
 
             access_token = create_access_token(identity=username)
@@ -217,7 +217,6 @@ class StreamKeyResource(Resource):
         except Exception as e:
             return ({'error': str(e)}), 200
         
-    @jwt_required()
     def post(self):
         """Get user ID by stream key."""
         try:

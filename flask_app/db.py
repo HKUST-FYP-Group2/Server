@@ -49,6 +49,7 @@ class DatabaseManager:
                 username TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL,
                 projector_app_setting TEXT
+                stream_key TEXT
             )
         ''')
         
@@ -56,7 +57,7 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS videos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                video_name TEXT NOT NULL,
+                video_name TEXT NOT NULL UNIQUE,
                 location TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 url TEXT NOT NULL,
