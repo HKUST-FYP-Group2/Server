@@ -13,3 +13,5 @@ images/*
 test*
 *.mp4
 **.log
+**.xml
+**.iml

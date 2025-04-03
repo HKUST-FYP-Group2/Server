@@ -1,9 +1,8 @@
 import sys
 sys.path.append("..")
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 from flask_restful import Api, Resource
-from flask_login import current_user, login_required
 from flask_app.db import dbManager
 import os
 
@@ -13,12 +12,15 @@ api = Api(videos_bp)
 
 # Video list resource
 class VideoListResource(Resource):
-    @login_required
+    @jwt_required()
     def get(self):
         """List all videos for the current user."""
         try:
-            user_id = current_user.get_id()
+            user_id = get_jwt_identity()
 
+            if not user_id:
+                return {'error': 'User not authenticated'}, 401
+            
             # Make an internal API call to get the stream key
             with current_app.test_client() as client:
                 headers = {
@@ -42,7 +44,7 @@ class VideoListResource(Resource):
         except Exception as e:
             return {'error': str(e)}, 400
 
-    @login_required
+    @jwt_required()
     def post(self):
         """Create a new video."""
         try:
@@ -61,7 +63,7 @@ class VideoListResource(Resource):
         except Exception as e:
             return {'error': str(e)}, 400
 
-    @login_required
+    @jwt_required()
     def delete(self):
         """Delete all videos."""
         try:
@@ -74,7 +76,7 @@ class VideoListResource(Resource):
 
 # Video resource
 class VideoResource(Resource):
-    @login_required
+    @jwt_required()
     def put(self, video_id):
         """Update a specific video."""
         try:
@@ -97,7 +99,7 @@ class VideoResource(Resource):
         except Exception as e:
             return {'error': str(e)}, 400
 
-    @login_required
+    @jwt_required()
     def delete(self, video_id):
         """Delete a specific video."""
         try:

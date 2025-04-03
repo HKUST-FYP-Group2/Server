@@ -80,8 +80,34 @@ class UserListResource(Resource):
             new_user = request.get_json()
             username = new_user['username']
             password = new_user['password']
-            settings = new_user.get('projector_app_setting')
             stream_key = new_user.get('stream_key')
+            settings = {
+                        "brightness": 100,
+                        "clock": {
+                            "show_clock": True,
+                            "show_second": False,
+                            "hour_12": True,
+                            "font_size": 30,
+                            "font_color": "#cc9900",
+                            "background_color": "#003366"
+                        },
+                        "settings_bar": {
+                            "show_settings_bar": True,
+                            "default_color": "#ffffff",
+                            "hover_background_color": "#003366",
+                            "hover_icon_color": "#996600"
+                        },
+                        "sound": {
+                            "volume": 80,
+                            "mode": "original",
+                            "keywords": [""],
+                            "sound_url": ""
+                        },
+                        "video": {
+                            "show_video": False,
+                            "video_url": f"https://virtualwindow.cam/hls/{stream_key}/index.m3u8"
+                        }
+                    }
 
             with dbManager as conn:
                 conn.execute('INSERT INTO users (username, password, projector_app_setting, stream_key) VALUES (?, ?, ?, ?)', 
