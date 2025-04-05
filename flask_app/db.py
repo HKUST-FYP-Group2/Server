@@ -11,6 +11,9 @@ class videos_SCHEMA(BaseModel):
     location: str
     created_at: str
     url: str
+    description: str
+    keyword1: str
+    keyword2: str
     cold_hot: int
     dry_wet: int
     clear_cloudy: int
@@ -61,13 +64,16 @@ class DatabaseManager:
                 location TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 url TEXT NOT NULL,
+                description TEXT NOT NULL,
+                keyword1 TEXT NOT NULL,
+                keyword2 TEXT NOT NULL,
                 cold_hot INTEGER NOT NULL,
                 dry_wet INTEGER NOT NULL,
                 clear_cloudy INTEGER NOT NULL,
                 calm_stormy INTEGER NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
-                     ''')     
+        ''')
         conn.commit()
 
 current_directory = os.path.dirname(os.path.abspath(__file__))

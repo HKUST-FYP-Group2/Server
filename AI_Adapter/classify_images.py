@@ -1,5 +1,3 @@
-from flask import Flask, request
-from flask_cors import CORS
 from pydantic import BaseModel, Field, field_validator
 import os
 import requests
@@ -7,7 +5,7 @@ import dotenv
 
 dotenv.load_dotenv(override=True)
 
-AI_model_URL = "http://127.0.0.1:8080"
+AI_model_URL = "http://127.0.0.1:5000"
 API_KEY = os.getenv("AI_SERVER_VALID_API_KEY")  # Load API key from environment
 
 class SENDIMAGE_SCHEMA(BaseModel):
@@ -56,8 +54,8 @@ def send_image(video_name: str, image_paths: list[str]):
     
     
 # Example Usage
-# response, status_code = send_image(
-#     "video1", 
-#     ["/home/hvgupta/FYP/rain.jpg", "/home/hvgupta/FYP/test.jpg", "/home/hvgupta/FYP/video1_img1.jpg"]
-# )
-# print(response)
+response, status_code = send_image(
+    "video1", 
+    ["/home/hvgupta/FYP/test.jpg",]
+)
+print(response)

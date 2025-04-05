@@ -120,7 +120,9 @@ from flask_app.db import dbManager
 
 def add_stream_key_column():
     with dbManager as conn:
-        conn.execute("ALTER TABLE users ADD COLUMN stream_key TEXT")
+        conn.execute("ALTER TABLE videos ADD COLUMN keyword1 TEXT")
+        conn.execute("ALTER TABLE videos ADD COLUMN keyword2 TEXT")
+        conn.execute("ALTER TABLE videos ADD COLUMN description TEXT")
         conn.commit()
 
 add_stream_key_column()
