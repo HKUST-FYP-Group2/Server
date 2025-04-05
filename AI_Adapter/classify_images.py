@@ -53,9 +53,9 @@ def send_image(video_name: str, image_paths: list[str]):
         return {"error": str(e)}, 400
     
     
-# Example Usage
-response, status_code = send_image(
-    "video1", 
-    ["/home/hvgupta/FYP/test.jpg",]
-)
-print(response)
+# # Example Usage
+# response, status_code = send_image(
+#     "video1", 
+#     ["/home/hvgupta/FYP/test.jpg",]
+# )
+# print(response)
