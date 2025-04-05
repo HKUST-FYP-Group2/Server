@@ -5,7 +5,7 @@ import dotenv
 
 dotenv.load_dotenv(override=True)
 
-AI_model_URL = "http://127.0.0.1:5000"
+AI_model_URL = "http://127.0.0.1:8080"
 API_KEY = os.getenv("AI_SERVER_VALID_API_KEY")  # Load API key from environment
 
 class SENDIMAGE_SCHEMA(BaseModel):
