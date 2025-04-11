@@ -51,7 +51,7 @@ class DatabaseManager:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL,
-                projector_app_setting TEXT
+                projector_app_setting TEXT,
                 stream_key TEXT
             )
         ''')
