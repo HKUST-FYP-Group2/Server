@@ -73,7 +73,7 @@ def get_majority_classification(classifications):
     return cold_hot, dry_wet, clear_cloudy, calm_stormy
 
 if __name__ == "__main__":
-    # pdb.set_trace()
+    #pdb.set_trace()
     video_files = get_video_name_after_prev_run(CHECK_DIR, CRON_PERIOD)
     for video_name in video_files:
         image_dir = download_images_of_video(video_name)
@@ -91,7 +91,7 @@ if __name__ == "__main__":
         video_path = os.path.join(CHECK_DIR, video_name)
         classification_dict = []
         for key in images.keys():
-            classification_dict.append(response[key])
+            classification_dict.append(response["images"][key])
         cold_hot, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(classification_dict)
         
         table_insert = videos_SCHEMA(
