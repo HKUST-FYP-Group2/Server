@@ -11,6 +11,7 @@ from flask import Flask
 from flask_jwt_extended import create_access_token
 from flask_login import current_user
 
+
 def get_stream_key():
     try:
         # Get the user ID of the current user
@@ -22,21 +23,22 @@ def get_stream_key():
             with app.test_client() as client:
                 # Use the JWT token of the current user for authentication
                 headers = {
-                    'Authorization': f'Bearer {create_access_token(identity=user_id)}'
+                    "Authorization": f"Bearer {create_access_token(identity=user_id)}"
                 }
-                response = client.get(f'/users/{user_id}/sk', headers=headers)
+                response = client.get(f"/users/{user_id}/sk", headers=headers)
 
             # Parse the response from the StreamKeyResource API
             if response.status_code != 200:
-                raise ValueError('Failed to retrieve stream key')
+                raise ValueError("Failed to retrieve stream key")
 
-            stream_key = response.get_json().get('stream_key')
+            stream_key = response.get_json().get("stream_key")
             if not stream_key:
-                raise ValueError('Stream key not found')
+                raise ValueError("Stream key not found")
 
             return stream_key
     except Exception as e:
-        raise ValueError(f'Error retrieving stream key: {str(e)}')
+        raise ValueError(f"Error retrieving stream key: {str(e)}")
+
 
 # Dynamically set CHECK_DIR using the stream key
 try:
@@ -47,43 +49,60 @@ except ValueError as e:
     CHECK_DIR = "/home/user/recordings"  # Fallback to default directory
 
 IMAGE_DIR = "/home/user/images/"
-CRON_PERIOD = 60*10  # 10 minutes
+CRON_PERIOD = 60 * 10  # 10 minutes
 
-def get_video_name_after_prev_run(video_dir:str, cron_period:int):
+
+def get_video_name_after_prev_run(video_dir: str, cron_period: int):
     current_time = datetime.now()
     files_need_updating = []
     for file in os.listdir(video_dir):
         if file.endswith(".mp4"):
-            if os.path.getmtime(os.path.join(video_dir, file)) > current_time.timestamp() - cron_period:
+            if (
+                os.path.getmtime(os.path.join(video_dir, file))
+                > current_time.timestamp() - cron_period
+            ):
                 files_need_updating.append(file)
     return files_need_updating
 
-def download_images_of_video(video_name:str):
+
+def download_images_of_video(video_name: str):
     video_file = os.path.join(CHECK_DIR, video_name)
     dir_name = Path(video_file).stem
     output_dir = os.path.join(IMAGE_DIR, dir_name)
     output_dir = extract_images_from_video(video_file, output_dir)
     return output_dir
 
+
 def get_majority_classification(classifications):
-    cold_hot = Counter([int(classification['cold-hot'] )for classification in classifications]).most_common(1)[0][0]
-    dry_wet = Counter([int(classification['dry-wet']) for classification in classifications]).most_common(1)[0][0]
-    clear_cloudy = Counter([int(classification['clear-cloudy']) for classification in classifications]).most_common(1)[0][0]
-    calm_stormy = Counter([int(classification['calm-stormy']) for classification in classifications]).most_common(1)[0][0]
+    cold_hot = Counter(
+        [int(classification["cold-hot"]) for classification in classifications]
+    ).most_common(1)[0][0]
+    dry_wet = Counter(
+        [int(classification["dry-wet"]) for classification in classifications]
+    ).most_common(1)[0][0]
+    clear_cloudy = Counter(
+        [int(classification["clear-cloudy"]) for classification in classifications]
+    ).most_common(1)[0][0]
+    calm_stormy = Counter(
+        [int(classification["calm-stormy"]) for classification in classifications]
+    ).most_common(1)[0][0]
     return cold_hot, dry_wet, clear_cloudy, calm_stormy
 
+
 if __name__ == "__main__":
-    #pdb.set_trace()
+    # pdb.set_trace()
     video_files = get_video_name_after_prev_run(CHECK_DIR, CRON_PERIOD)
     for video_name in video_files:
         image_dir = download_images_of_video(video_name)
-        image_paths = [os.path.join(image_dir, image) for image in os.listdir(image_dir)]
+        image_paths = [
+            os.path.join(image_dir, image) for image in os.listdir(image_dir)
+        ]
         response, status_code = send_image(video_name, image_paths)
-        
-        keywords:list[str] = response.get("keywords", ["", ""])
-        description:str = response.get("description", "")
-        images:dict = response.get("images", {})
-        
+
+        keywords: list[str] = response.get("keywords", ["", ""])
+        description: str = response.get("description", "")
+        images: dict = response.get("images", {})
+
         if status_code != 200:
             print(f"Error: {response}")  # basic error handling
             continue
@@ -92,26 +111,32 @@ if __name__ == "__main__":
         classification_dict = []
         for key in images.keys():
             classification_dict.append(response["images"][key])
-        cold_hot, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(classification_dict)
-        
+        cold_hot, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(
+            classification_dict
+        )
+        new_video_name = f"{Path(video_name).stem}_{response["weather_word"]}{Path(video_name).suffix}"
+        new_video_path = os.path.join(CHECK_DIR, new_video_name)
+        os.rename(video_path, new_video_path)
+
         table_insert = videos_SCHEMA(
             user_id=current_user.get_id(),
-            video_name=video_name,
+            video_name=new_video_name,
             location=os.path.join(CHECK_DIR, video_name),
-            created_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            url=video_path,
+            created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            url=new_video_path,
             description=description,
             keyword1=keywords[0],
             keyword2=keywords[1],
             cold_hot=cold_hot,
             dry_wet=dry_wet,
             clear_cloudy=clear_cloudy,
-            calm_stormy=calm_stormy           
+            calm_stormy=calm_stormy,
         )
-        
+
         with dbManager as conn:
-            cursor = conn.execute('''
+            cursor = conn.execute(
+                """
             INSERT INTO videos (user_id, video_name, location, created_at, url, description, keyword1, keyword2, cold_hot, dry_wet, clear_cloudy, calm_stormy)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-            tuple(table_insert.model_dump().values())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                tuple(table_insert.model_dump().values()),
             )
