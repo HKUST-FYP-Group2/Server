@@ -69,7 +69,7 @@ def download_images_of_video(video_name: str):
     video_file = os.path.join(CHECK_DIR, video_name)
     dir_name = Path(video_file).stem
     output_dir = os.path.join(IMAGE_DIR, dir_name)
-    output_dir = extract_images_from_video(video_file, output_dir)
+    output_dir = extract_images_from_video(video_file, output_dir, 0.1)
     return output_dir
 
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         cold_hot, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(
             classification_dict
         )
-        new_video_name = f"{Path(video_name).stem}_{response["weather_word"]}{Path(video_name).suffix}"
+        new_video_name = f'{Path(video_name).stem}_{response["weather_word"]}{Path(video_name).suffix}'
         new_video_path = os.path.join(CHECK_DIR, new_video_name)
         os.rename(video_path, new_video_path)
 
