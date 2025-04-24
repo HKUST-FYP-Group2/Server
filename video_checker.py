@@ -104,13 +104,13 @@ if __name__ == "__main__":
             )
 
             key_type = video_path.split("_key")[0]
-
             user_id = None
             with dbManager as conn:
                 user_id = conn.execute(
                     """
                     SELECT id FROM users WHERE username = ?
-                                       """
+                                       """,
+                    (key_type,),
                 ).fetchone()
 
             new_video_path = video_path.replace(
