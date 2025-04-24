@@ -114,7 +114,7 @@ if __name__ == "__main__":
                 ).fetchone()
 
             new_video_path = video_path.replace(
-                ".mp4", f"_{response["weather_word"]}.mp4"
+                ".mp4", f"_{response['weather_word']}.mp4"
             )
             os.rename(video_path, new_video_path)
             logger.info(f"Renamed video to: {new_video_path}")
