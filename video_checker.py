@@ -8,8 +8,6 @@ from pathlib import Path
 from AI_Adapter.classify_images import send_image
 from AI_Adapter.video_classifier_adapter import extract_images_from_video
 from flask_app.db import dbManager, videos_SCHEMA
-from flask import Flask
-from flask_jwt_extended import create_access_token
 from flask_login import current_user
 
 # Configure logging
@@ -21,70 +19,40 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def get_stream_key():
-    try:
-        logger.info("Attempting to retrieve stream key.")
-        user_id = current_user.get_id()
-        logger.debug(f"Current user ID: {user_id}")
-
-        app = Flask(__name__)
-        with app.app_context():
-            with app.test_client() as client:
-                headers = {
-                    "Authorization": f"Bearer {create_access_token(identity=user_id)}"
-                }
-                response = client.get(f"/users/{user_id}/sk", headers=headers)
-
-            if response.status_code != 200:
-                logger.error("Failed to retrieve stream key.")
-                raise ValueError("Failed to retrieve stream key")
-
-            stream_key = response.get_json().get("stream_key")
-            if not stream_key:
-                logger.error("Stream key not found.")
-                raise ValueError("Stream key not found")
-
-            logger.info("Stream key retrieved successfully.")
-            return stream_key
-    except Exception as e:
-        logger.exception("Error retrieving stream key.")
-        raise ValueError(f"Error retrieving stream key: {str(e)}")
-
-
-try:
-    stream_key = get_stream_key()
-    CHECK_DIR = f"/home/user/recordings/{stream_key}"
-    logger.info(f"CHECK_DIR set to: {CHECK_DIR}")
-except ValueError as e:
-    logger.error(f"Error: {e}")
-    CHECK_DIR = "/home/user/recordings"
-    logger.info(f"CHECK_DIR set to fallback directory: {CHECK_DIR}")
-
+CHECK_DIRS = [
+    f"/home/user/recordings/{dir}"
+    for dir in os.listdir("/home/user/recordings")
+    if "_key" in dir
+]  # very simple check for now
 IMAGE_DIR = "/home/user/images/"
 CRON_PERIOD = 60 * 10  # 10 minutes
 
 
-def get_video_name_after_prev_run(video_dir: str, cron_period: int):
+def get_video_name_after_prev_run(video_dirs: list[str], cron_period: int) -> list[str]:
     logger.info(f"Fetching video files modified in the last {cron_period} seconds.")
     current_time = datetime.now()
     files_need_updating = []
-    for file in os.listdir(video_dir):
-        if file.endswith(".mp4"):
+    for video_dir in video_dirs:
+        for file in os.listdir(video_dir):
+            if not file.endswith(".mp4"):
+                continue
+            video_abs_path = os.path.abspath(os.path.join(video_dir, file))
             if (
-                os.path.getmtime(os.path.join(video_dir, file))
+                os.path.getmtime(video_abs_path)
                 > current_time.timestamp() - cron_period
             ):
-                files_need_updating.append(file)
-    logger.info(f"Files needing update: {files_need_updating}")
+                files_need_updating.append(video_abs_path)
+        logger.info(f"Files needing update: {files_need_updating}")
     return files_need_updating
 
 
 def download_images_of_video(video_name: str):
     logger.info(f"Downloading images for video: {video_name}")
-    video_file = os.path.join(CHECK_DIR, video_name)
-    dir_name = Path(video_file).stem
+    dir_name = Path(video_name).stem
     output_dir = os.path.join(IMAGE_DIR, dir_name)
-    output_dir = extract_images_from_video(video_file, output_dir, 0.1)
+    # adjusted this to 1 image per 10 seconds, but I think can be reduced even further
+    output_dir = extract_images_from_video(video_name, output_dir, 0.1)
+
     logger.info(f"Images extracted to: {output_dir}")
     return output_dir
 
@@ -109,15 +77,15 @@ def get_majority_classification(classifications):
 
 if __name__ == "__main__":
     logger.info("Starting video processing.")
-    video_files = get_video_name_after_prev_run(CHECK_DIR, CRON_PERIOD)
-    for video_name in video_files:
+    video_paths = get_video_name_after_prev_run(CHECK_DIRS, CRON_PERIOD)
+    for video_path in video_paths:
         try:
-            logger.info(f"Processing video: {video_name}")
-            image_dir = download_images_of_video(video_name)
+            logger.info(f"Processing video: {video_path}")
+            image_dir = download_images_of_video(video_path)
             image_paths = [
                 os.path.join(image_dir, image) for image in os.listdir(image_dir)
             ]
-            response, status_code = send_image(video_name, image_paths)
+            response, status_code = send_image(video_path, image_paths)
 
             if status_code != 200:
                 logger.error(f"Error in send_image response: {response}")
@@ -127,22 +95,33 @@ if __name__ == "__main__":
             description: str = response.get("description", "")
             images: dict = response.get("images", {})
 
-            video_path = os.path.join(CHECK_DIR, video_name)
             classification_dict = []
             for key in images.keys():
                 classification_dict.append(response["images"][key])
             cold_hot, dry_wet, clear_cloudy, calm_stormy = get_majority_classification(
                 classification_dict
             )
-            new_video_name = f'{Path(video_name).stem}_{response["weather_word"]}{Path(video_name).suffix}'
-            new_video_path = os.path.join(CHECK_DIR, new_video_name)
+
+            key_type = video_path.split("_key")[0]
+
+            user_id = None
+            with dbManager as conn:
+                user_id = conn.execute(
+                    """
+                    SELECT id FROM users WHERE username = ?
+                                       """
+                ).fetchone()
+
+            new_video_path = video_path.replace(
+                ".mp4", f"_{response["weather_word"]}.mp4"
+            )
             os.rename(video_path, new_video_path)
-            logger.info(f"Renamed video to: {new_video_name}")
+            logger.info(f"Renamed video to: {new_video_path}")
 
             table_insert = videos_SCHEMA(
-                user_id=current_user.get_id(),
-                video_name=new_video_name,
-                location=os.path.join(CHECK_DIR, video_name),
+                user_id=user_id,
+                video_name=Path(new_video_path).stem,
+                location=new_video_path,
                 created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 url=new_video_path,
                 description=description,
@@ -161,6 +140,6 @@ if __name__ == "__main__":
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     tuple(table_insert.model_dump().values()),
                 )
-            logger.info(f"Video {new_video_name} inserted into database.")
+            logger.info(f"Video {new_video_path} inserted into database.")
         except Exception as e:
-            logger.exception(f"Error processing video {video_name}: {e}")
+            logger.exception(f"Error processing video {video_path}: {e}")
