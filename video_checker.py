@@ -76,6 +76,7 @@ def get_majority_classification(classifications):
 
 
 if __name__ == "__main__":
+    # pdb.set_trace()
     logger.info("Starting video processing.")
     video_paths = get_video_name_after_prev_run(CHECK_DIRS, CRON_PERIOD)
     for video_path in video_paths:
