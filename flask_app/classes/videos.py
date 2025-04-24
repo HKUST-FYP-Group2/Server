@@ -49,15 +49,25 @@ class VideoListResource(Resource):
         """Create a new video."""
         try:
             new_video = request.get_json()
+            
+            user_id = new_video.get('user_id')
             video_name = new_video.get('video_name')
             location = new_video.get('location')
             created_at = new_video.get('created_at')
             video_url = new_video.get('video_url')
+            description = new_video.get('description')
+            keyword1 = new_video.get('keyword1')
+            keyword2 = new_video.get('keyword2')
+            cold_hot = new_video.get('cold_hot')
+            dry_wet = new_video.get('dry_wet')
+            clear_cloudy = new_video.get('clear_cloudy')
+            calm_stormy = new_video.get('calm_stormy')
 
             with dbManager as conn:
                 conn.execute('''
-                    INSERT INTO videos (video_name, location, created_at, URL) 
-                    VALUES (?, ?, ?, ?)''', (video_name, location, created_at, video_url))
+                    INSERT INTO videos (user_id, video_name, location, created_at, url, description, keyword1, keyword2, cold_hot, dry_wet, clear_cloudy, calm_stormy) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                    (user_id, video_name, location, created_at, video_url, description, keyword1, keyword2, cold_hot, dry_wet, clear_cloudy, calm_stormy))
 
             return new_video, 201
         except Exception as e:

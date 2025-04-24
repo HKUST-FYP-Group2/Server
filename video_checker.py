@@ -76,7 +76,7 @@ def get_majority_classification(classifications):
 
 
 if __name__ == "__main__":
-    # pdb.set_trace()
+    #pdb.set_trace()
     logger.info("Starting video processing.")
     video_paths = get_video_name_after_prev_run(CHECK_DIRS, CRON_PERIOD)
     for video_path in video_paths:
@@ -103,7 +103,7 @@ if __name__ == "__main__":
                 classification_dict
             )
 
-            key_type = video_path.split("_key")[0]
+            key_type = video_path.split("_key")[0].split("/")[-1]
             user_id = None
             with dbManager as conn:
                 user_id = conn.execute(
@@ -111,7 +111,7 @@ if __name__ == "__main__":
                     SELECT id FROM users WHERE username = ?
                                        """,
                     (key_type,),
-                ).fetchone()
+                ).fetchone()["id"]
 
             new_video_path = video_path.replace(
                 ".mp4", f"_{response['weather_word']}.mp4"
