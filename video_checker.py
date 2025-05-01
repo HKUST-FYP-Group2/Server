@@ -76,7 +76,7 @@ def get_majority_classification(classifications):
 
 
 if __name__ == "__main__":
-    #pdb.set_trace()
+    # pdb.set_trace()
     logger.info("Starting video processing.")
     video_paths = get_video_name_after_prev_run(CHECK_DIRS, CRON_PERIOD)
     for video_path in video_paths:
@@ -138,7 +138,7 @@ if __name__ == "__main__":
                 cursor = conn.execute(
                     """
                 INSERT INTO videos (user_id, video_name, location, created_at, url, description, keyword1, keyword2, cold_hot, dry_wet, clear_cloudy, calm_stormy)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     tuple(table_insert.model_dump().values()),
                 )
             logger.info(f"Video {new_video_path} inserted into database.")
