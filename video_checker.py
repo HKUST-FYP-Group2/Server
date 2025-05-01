@@ -8,7 +8,6 @@ from pathlib import Path
 from AI_Adapter.classify_images import send_image
 from AI_Adapter.video_classifier_adapter import extract_images_from_video
 from flask_app.db import dbManager, videos_SCHEMA
-from flask_login import current_user
 
 # Configure logging
 logging.basicConfig(
@@ -22,10 +21,10 @@ logger = logging.getLogger(__name__)
 CHECK_DIRS = [
     f"/home/user/recordings/{dir}"
     for dir in os.listdir("/home/user/recordings")
-    if "_key" in dir
+    if "_key" in dir and not dir.endswith(".flv") and not dir.endswith(".mp4")
 ]  # very simple check for now
 IMAGE_DIR = "/home/user/images/"
-CRON_PERIOD = 60 * 1  # 1 minute
+CRON_PERIOD = 60 * 1.1  # 1 minute
 
 
 def get_video_name_after_prev_run(video_dirs: list[str], cron_period: int) -> list[str]:
