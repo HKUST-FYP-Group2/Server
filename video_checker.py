@@ -25,7 +25,7 @@ CHECK_DIRS = [
     if "_key" in dir
 ]  # very simple check for now
 IMAGE_DIR = "/home/user/images/"
-CRON_PERIOD = 60 * 10  # 10 minutes
+CRON_PERIOD = 60 * 1  # 1 minute
 
 
 def get_video_name_after_prev_run(video_dirs: list[str], cron_period: int) -> list[str]:
