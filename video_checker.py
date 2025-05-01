@@ -34,7 +34,7 @@ def get_video_name_after_prev_run(video_dirs: list[str], cron_period: int) -> li
     files_need_updating = []
     for video_dir in video_dirs:
         for file in os.listdir(video_dir):
-            if not file.endswith(".mp4"):
+            if not file.endswith(".mp4") or "done" in file:
                 continue
             video_abs_path = os.path.abspath(os.path.join(video_dir, file))
             if (
@@ -114,7 +114,7 @@ if __name__ == "__main__":
                 ).fetchone()["id"]
 
             new_video_path = video_path.replace(
-                ".mp4", f"_{response['weather_word']}.mp4"
+                ".mp4", f"_done_{response['weather_word']}.mp4"
             )
             os.rename(video_path, new_video_path)
             logger.info(f"Renamed video to: {new_video_path}")
